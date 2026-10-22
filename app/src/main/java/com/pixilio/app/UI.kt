@@ -38,12 +38,13 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -68,6 +69,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -88,7 +90,7 @@ class Actions(
 )
 
 @Composable
-fun App(e: Editor, a: Actions) {
+fun App(e: Editor, a: Actions, name: String, onHome: () -> Unit) {
     var menu by remember { mutableStateOf(false) }
     var dlg by remember { mutableStateOf("") }
 
@@ -104,16 +106,29 @@ fun App(e: Editor, a: Actions) {
                 .padding(horizontal = 12.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Pixilio", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
-            Spacer(Modifier.weight(1f))
-            TextButton(onClick = { e.undo() }, enabled = e.canUndo) { Text("↶", fontSize = 24.sp) }
-            TextButton(onClick = { e.redo() }, enabled = e.canRedo) { Text("↷", fontSize = 24.sp) }
+            IconButton(onClick = onHome) { Icon(Lu.ChevronLeft, null, tint = Color.White) }
+            Text(
+                name,
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            IconButton(onClick = { e.undo() }, enabled = e.canUndo) {
+                Icon(Lu.Undo2, null, tint = if (e.canUndo) Color.White else Color(0x55FFFFFF))
+            }
+            IconButton(onClick = { e.redo() }, enabled = e.canRedo) {
+                Icon(Lu.Redo2, null, tint = if (e.canRedo) Color.White else Color(0x55FFFFFF))
+            }
             Box {
-                TextButton(onClick = { menu = true }) { Text("⋮", fontSize = 24.sp) }
+                IconButton(onClick = { menu = true }) { Icon(Lu.EllipsisVertical, null, tint = Color.White) }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                    MItem("Proyek baru") { menu = false; dlg = "new" }
-                    MItem("Buka proyek (.pixilio)") { menu = false; a.openProject() }
-                    MItem("Simpan proyek (.pixilio)") { menu = false; a.saveProject() }
+                    MItem("Beranda") { menu = false; onHome() }
+                    MItem("Kanvas baru (ganti isi)") { menu = false; dlg = "new" }
+                    MItem("Impor file .pixilio (ganti isi)") { menu = false; a.openProject() }
+                    MItem("Ekspor file .pixilio") { menu = false; a.saveProject() }
                     MItem("Ekspor PNG") { menu = false; dlg = "export" }
                     MItem("Impor gambar") { menu = false; a.importImage() }
                     MItem("Ubah ukuran kanvas") { menu = false; dlg = "resize" }
@@ -122,6 +137,7 @@ fun App(e: Editor, a: Actions) {
                     MItem("Balik vertikal (layer)") { menu = false; e.flipLayer(false) }
                     MItem("Bersihkan layer") { menu = false; e.clearLayer() }
                     MItem("Pas layar") { menu = false; e.fit() }
+                    MItem("Bahasa") { menu = false; dlg = "lang" }
                     MItem("Tentang") { menu = false; dlg = "about" }
                 }
             }
@@ -152,8 +168,16 @@ fun App(e: Editor, a: Actions) {
                         .padding(6.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Button(onClick = { e.commitFloat() }) { Text("✓ Tempel") }
-                    OutlinedButton(onClick = { e.cancelFloat() }) { Text("✕ Batal") }
+                    Button(onClick = { e.commitFloat() }) {
+                        Icon(Lu.Check, null, Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Tempel")
+                    }
+                    OutlinedButton(onClick = { e.cancelFloat() }) {
+                        Icon(Lu.X, null, Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Batal")
+                    }
                 }
             }
         }
@@ -163,7 +187,7 @@ fun App(e: Editor, a: Actions) {
 
     when (dlg) {
         "new" -> SizeDialog(
-            "Proyek baru", 32, 32,
+            "Kanvas baru", 32, 32,
             "Proyek saat ini akan diganti. Simpan dulu kalau perlu.",
             { w, h -> dlg = ""; e.newDoc(w, h) }, { dlg = "" }
         )
@@ -172,6 +196,7 @@ fun App(e: Editor, a: Actions) {
             "Ukuran lebih kecil memotong gambar dari sisi kanan/bawah.",
             { w, h -> dlg = ""; e.resizeCanvas(w, h) }, { dlg = "" }
         )
+        "lang" -> LanguageDialog { dlg = "" }
         "color" -> ColorDialog(e) { dlg = "" }
         "layers" -> LayersDialog(e) { dlg = "" }
         "clips" -> ClipsDialog(e) { dlg = "" }
@@ -181,9 +206,12 @@ fun App(e: Editor, a: Actions) {
             title = { Text("Pixilio : Pixel Art") },
             text = {
                 Text(
-                    "Versi ${a.version}\n\nEditor pixel art dengan layer, clipboard (salin/potong/tempel), " +
-                        "simetri, ekspor PNG berskala, dan proyek .pixilio. Ukuran kanvas tidak dibatasi " +
-                        "aplikasi (batasnya RAM perangkat)."
+                    tr("Versi") + " ${a.version}\n\n" +
+                        tr(
+                            "Editor pixel art dengan layer, clipboard (salin/potong/tempel), " +
+                                "simetri, ekspor PNG berskala, dan proyek .pixilio. Ukuran kanvas tidak dibatasi " +
+                                "aplikasi (batasnya RAM perangkat)."
+                        )
                 )
             },
             confirmButton = { TextButton(onClick = { dlg = "" }) { Text("OK") } }
@@ -281,7 +309,7 @@ fun PixelCanvas(e: Editor) {
             }
         }
 
-        val s = e.selection
+        val s = if (e.tool == Tool.SELECT) e.selection else null
         if (s != null) {
             val tl = Offset(o.x + s[0] * z, o.y + s[1] * z)
             val sz = Size((s[2] - s[0] + 1) * z, (s[3] - s[1] + 1) * z)
@@ -323,7 +351,12 @@ fun BottomPanel(e: Editor, onColor: () -> Unit, onLayers: () -> Unit, onClips: (
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Tool.values().forEach { t ->
-                FilterChip(selected = e.tool == t, onClick = { e.tool = t }, label = { Text(t.label) })
+                FilterChip(
+                    selected = e.tool == t,
+                    onClick = { e.tool = t },
+                    label = { Text(t.label) },
+                    leadingIcon = chipIcon(toolIcon(t))
+                )
             }
         }
 
@@ -364,12 +397,12 @@ fun BottomPanel(e: Editor, onColor: () -> Unit, onLayers: () -> Unit, onClips: (
                 .padding(horizontal = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            AssistChip(onClick = onLayers, label = { Text("🗂 Layer") })
-            AssistChip(onClick = onClips, label = { Text("📋 Clipboard (${e.clips.size})") })
-            FilterChip(selected = e.showGrid, onClick = { e.showGrid = !e.showGrid }, label = { Text("▦ Grid") })
-            FilterChip(selected = e.mirrorX, onClick = { e.mirrorX = !e.mirrorX }, label = { Text("⇋ Simetri X") })
-            FilterChip(selected = e.mirrorY, onClick = { e.mirrorY = !e.mirrorY }, label = { Text("⇵ Simetri Y") })
-            FilterChip(selected = e.shapeFill, onClick = { e.shapeFill = !e.shapeFill }, label = { Text("■ Isi bentuk") })
+            AssistChip(onClick = onLayers, label = { Text("Layer") }, leadingIcon = chipIcon(Lu.Layers))
+            AssistChip(onClick = onClips, label = { Text("Clipboard (${e.clips.size})") }, leadingIcon = chipIcon(Lu.Clipboard))
+            FilterChip(selected = e.showGrid, onClick = { e.showGrid = !e.showGrid }, label = { Text("Grid") }, leadingIcon = chipIcon(Lu.Grid3x3))
+            FilterChip(selected = e.mirrorX, onClick = { e.mirrorX = !e.mirrorX }, label = { Text("Simetri X") }, leadingIcon = chipIcon(Lu.FlipHorizontal2))
+            FilterChip(selected = e.mirrorY, onClick = { e.mirrorY = !e.mirrorY }, label = { Text("Simetri Y") }, leadingIcon = chipIcon(Lu.FlipVertical2))
+            FilterChip(selected = e.shapeFill, onClick = { e.shapeFill = !e.shapeFill }, label = { Text("Isi bentuk") }, leadingIcon = chipIcon(Lu.Square))
         }
 
         Row(
@@ -398,19 +431,20 @@ fun SelectionBar(e: Editor) {
             .padding(horizontal = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        AssistChip(onClick = { e.selectAll() }, label = { Text("Semua") })
-        AssistChip(onClick = { e.copySelection(false) }, enabled = has, label = { Text("Salin") })
-        AssistChip(onClick = { e.copySelection(true) }, enabled = has, label = { Text("Potong") })
-        AssistChip(onClick = { e.copySelection(false, true) }, enabled = has, label = { Text("Salin gabungan") })
-        AssistChip(onClick = { e.deleteSelection() }, enabled = has, label = { Text("Hapus") })
+        AssistChip(onClick = { e.selectAll() }, label = { Text("Semua") }, leadingIcon = chipIcon(Lu.BoxSelect))
+        AssistChip(onClick = { e.copySelection(false) }, enabled = has, label = { Text("Salin") }, leadingIcon = chipIcon(Lu.Copy))
+        AssistChip(onClick = { e.copySelection(true) }, enabled = has, label = { Text("Potong") }, leadingIcon = chipIcon(Lu.Scissors))
+        AssistChip(onClick = { e.copySelection(false, true) }, enabled = has, label = { Text("Salin gabungan") }, leadingIcon = chipIcon(Lu.Layers))
+        AssistChip(onClick = { e.deleteSelection() }, enabled = has, label = { Text("Hapus") }, leadingIcon = chipIcon(Lu.Trash2))
         AssistChip(
             onClick = {
                 val c = e.clips.firstOrNull()
                 if (c != null) e.paste(c) else e.onMessage("Clipboard masih kosong")
             },
-            label = { Text("Tempel") }
+            label = { Text("Tempel") },
+            leadingIcon = chipIcon(Lu.Clipboard)
         )
-        AssistChip(onClick = { e.clearSelection() }, enabled = has, label = { Text("Batal pilih") })
+        AssistChip(onClick = { e.clearSelection() }, enabled = has, label = { Text("Batal pilih") }, leadingIcon = chipIcon(Lu.X))
     }
 }
 
@@ -477,76 +511,6 @@ fun SizeDialog(
     )
 }
 
-private fun hexOf(c: Int): String =
-    if ((c ushr 24) == 255) String.format("%06X", c and 0xFFFFFF) else String.format("%08X", c)
-
-@Composable
-fun ChannelSlider(label: String, value: Int, onChange: (Int) -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(label, modifier = Modifier.width(20.dp))
-        Slider(
-            value = value.toFloat(),
-            onValueChange = { onChange(it.roundToInt()) },
-            valueRange = 0f..255f,
-            modifier = Modifier
-                .weight(1f)
-                .height(32.dp)
-        )
-        Text("$value", modifier = Modifier.width(32.dp), fontSize = 12.sp)
-    }
-}
-
-@Composable
-fun ColorDialog(e: Editor, onDismiss: () -> Unit) {
-    var argb by remember { mutableIntStateOf(e.color) }
-    var hex by remember { mutableStateOf(hexOf(e.color)) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Pilih warna") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFF888888))
-                        .padding(3.dp)
-                        .background(Color(argb))
-                )
-                ChannelSlider("R", (argb shr 16) and 255) { v ->
-                    argb = (argb and 0xFF00FFFF.toInt()) or (v shl 16); hex = hexOf(argb)
-                }
-                ChannelSlider("G", (argb shr 8) and 255) { v ->
-                    argb = (argb and 0xFFFF00FF.toInt()) or (v shl 8); hex = hexOf(argb)
-                }
-                ChannelSlider("B", argb and 255) { v ->
-                    argb = (argb and 0xFFFFFF00.toInt()) or v; hex = hexOf(argb)
-                }
-                ChannelSlider("A", (argb ushr 24) and 255) { v ->
-                    argb = (argb and 0x00FFFFFF) or (v shl 24); hex = hexOf(argb)
-                }
-                OutlinedTextField(
-                    value = hex,
-                    onValueChange = { t ->
-                        val s = t.uppercase().filter { ch -> ch in "0123456789ABCDEF" }.take(8)
-                        hex = s
-                        if (s.length == 6) argb = (0xFF shl 24) or s.toInt(16)
-                        if (s.length == 8) argb = s.toLong(16).toInt()
-                    },
-                    label = { Text("Hex (RRGGBB atau AARRGGBB)") },
-                    singleLine = true
-                )
-                TextButton(onClick = { e.useColor(argb); e.addPalette(argb); onDismiss() }) {
-                    Text("+ Simpan ke palet & pakai")
-                }
-            }
-        },
-        confirmButton = { TextButton(onClick = { e.useColor(argb); onDismiss() }) { Text("Pakai") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Batal") } }
-    )
-}
-
 @Composable
 fun LayersDialog(e: Editor, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
@@ -566,7 +530,7 @@ fun LayersDialog(e: Editor, onDismiss: () -> Unit) {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             TextButton(onClick = { e.setVisible(l, !l.visible) }) {
-                                Text(if (l.visible) "👁" else "🚫")
+                                Icon(if (l.visible) Lu.Eye else Lu.EyeOff, null, Modifier.size(20.dp))
                             }
                             Text(l.name, modifier = Modifier.weight(1f), maxLines = 1)
                             Text("${(l.opacity * 100).roundToInt()}%", fontSize = 12.sp)
@@ -608,7 +572,7 @@ fun ClipsDialog(e: Editor, onDismiss: () -> Unit) {
                 Text("Clipboard (${e.clips.size})", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 if (e.clips.isEmpty()) {
                     Text(
-                        "Kosong. Pakai alat ⬚ Pilih, blok area, lalu Salin atau Potong.",
+                        "Kosong. Pakai alat Pilih, blok area, lalu Salin atau Potong.",
                         fontSize = 13.sp
                     )
                 }
@@ -629,7 +593,7 @@ fun ClipsDialog(e: Editor, onDismiss: () -> Unit) {
                                 .weight(1f)
                                 .padding(horizontal = 8.dp), fontSize = 13.sp)
                             TextButton(onClick = { e.paste(c); onDismiss() }) { Text("Tempel") }
-                            TextButton(onClick = { e.clips.remove(c) }) { Text("✕") }
+                            IconButton(onClick = { e.clips.remove(c) }) { Icon(Lu.X, null, Modifier.size(18.dp)) }
                         }
                     }
                 }

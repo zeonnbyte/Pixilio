@@ -1,35 +1,46 @@
-# Pixilio : Pixel Art — V0.0.4.2026-alpha
+<div align="center">
 
-Editor pixel art untuk Android (Kotlin + Jetpack Compose).
+# Pixilio
+
+**Editor pixel art untuk Android**
+
+![Versi](https://img.shields.io/badge/versi-0.0.9--alpha-orange)
+![Platform](https://img.shields.io/badge/platform-Android%207.0%2B-3DDC84?logo=android&logoColor=white)
+![Kotlin](https://img.shields.io/badge/Kotlin-Jetpack%20Compose-7F52FF?logo=kotlin&logoColor=white)
+
+</div>
+
+Pixilio adalah editor pixel art ringan buat Android, dibuat dengan Kotlin dan Jetpack Compose. Tanpa iklan, tanpa batas ukuran kanvas dari aplikasi (batasnya RAM perangkat).
 
 ## Fitur
-- Alat: pensil, penghapus, isi (flood fill), pipet, garis, kotak, elips, pilih area, geser
-- Ukuran kuas 1–64, simetri X/Y, isi bentuk
-- Clipboard: salin, potong, salin gabungan, tempel (bisa digeser dulu), riwayat clipboard
-- Layer: tambah, duplikat, hapus, urutan, gabung ke bawah, visibilitas, opasitas
-- Undo/redo, pinch zoom, geser dua jari, grid
-- Palet 32 warna + warna kustom (RGBA/hex), palet tersimpan
-- Ubah ukuran kanvas, putar 90°, balik horizontal/vertikal
-- Proyek .pixilio (kompresi gzip), ekspor PNG berskala, impor gambar
-- Autosave otomatis saat aplikasi ditutup
-- Ukuran kanvas tidak dibatasi aplikasi (batas = RAM perangkat)
+
+- **Beranda:** daftar proyek, folder, tombol **+** proyek baru, ganti nama, hapus, autosave
+- **Alat:** pensil, penghapus, isi (fill), pipet, garis, kotak, elips, pilih area, geser
+- **Kuas:** ukuran 1-64, simetri X/Y, isi bentuk
+- **Warna:** palet 32 warna, color picker mode **Wheel** dan **Biasa**, kode HEX / RGB / HSL / HSV / CMYK / 0xARGB, palet tersimpan
+- **Layer:** tambah, duplikat, hapus, urutan, gabung ke bawah, visibilitas, opasitas
+- **Clipboard:** salin, potong, tempel, riwayat clipboard
+- **Kanvas:** undo/redo, pinch zoom, grid, ubah ukuran, putar 90°, balik horizontal/vertikal
+- **File:** proyek `.pixilio`, ekspor PNG berskala, impor gambar
+- **Bahasa:** Default (ikut sistem), Indonesia, English
+- **Ikon:** gaya [Lucide](https://lucide.dev)
+
+## Instalasi
+
+Download APK dari tab **Releases** atau dari artifact **Actions**, lalu install di HP (izinkan install dari sumber tidak dikenal).
 
 ## Build
-1. Buka folder ini di Android Studio (Jdk 17).
-2. Tunggu Gradle sync, lalu Run atau Build > Build APK(s).
 
-## Build di HP / tanpa laptop
+**Android Studio:** buka folder ini (JDK 17), tunggu Gradle sync, lalu *Build > Build APK(s)*.
 
-### GitHub Actions (APK dibuild di cloud)
-1. Buat repo GitHub, upload seluruh isi folder ini (termasuk `.github/workflows/build.yml`).
-2. Buka tab **Actions** > **Build APK** > **Run workflow** (atau otomatis tiap push ke `main`).
-3. Setelah selesai, download artifact **Pixilio APK** (isinya zip berisi `app-debug.apk`), extract, lalu install.
+**GitHub Actions:** push ke `main` (atau jalankan manual di tab **Actions > Build APK**), lalu download artifact **Pixilio APK**.
 
-### AndroidIDE
-Buka folder project di AndroidIDE, tunggu sync Gradle, lalu Build > Build APK.
+**AndroidIDE:** buka folder project, sync Gradle, lalu *Build > Build APK*.
 
-## Tanda tangan APK (signing)
-APK release ditandatangani dengan keystore yang disimpan sebagai GitHub Secrets
-(`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`).
-Kalau secret kosong, build memakai debug key. Jangan pernah commit file `.jks`,
-dan simpan backup keystore: kalau hilang, update app tidak bisa menimpa versi lama.
+### Signing
+
+APK release ditandatangani lewat GitHub Secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Kalau kosong, build memakai debug key. Jangan commit file `.jks` dan simpan backup keystore-nya, kalau hilang update tidak bisa menimpa versi lama.
+
+## Changelog
+
+Lihat [CHANGELOG.md](CHANGELOG.md).

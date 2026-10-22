@@ -96,7 +96,12 @@ object ProjectIO {
     }
 
     fun decodeImage(input: InputStream): ImageData? {
-        val bmp = BitmapFactory.decodeStream(input) ?: return null
+        val opts = BitmapFactory.Options().apply {
+            inPremultiplied = false
+            inScaled = false
+            inPreferredConfig = Bitmap.Config.ARGB_8888
+        }
+        val bmp = BitmapFactory.decodeStream(input, null, opts) ?: return null
         val w = bmp.width
         val h = bmp.height
         val px = IntArray(w * h)
@@ -113,8 +118,21 @@ object ProjectIO {
     }
 
     fun writePng(px: IntArray, w: Int, h: Int, scale: Int, out: OutputStream) {
-        val base = Bitmap.createBitmap(px, w, h, Bitmap.Config.ARGB_8888)
-        val bmp = if (scale > 1) Bitmap.createScaledBitmap(base, w * scale, h * scale, false) else base
+        val sw = w * scale
+        val sh = h * scale
+        val data = if (scale > 1) {
+            val a = IntArray(sw * sh)
+            for (y in 0 until sh) {
+                val src = (y / scale) * w
+                val row = y * sw
+                for (x in 0 until sw) a[row + x] = px[src + x / scale]
+            }
+            a
+        } else px
+        // non-premultiplied: warna semi-transparan tersimpan persis, tanpa pembulatan
+        val bmp = Bitmap.createBitmap(sw, sh, Bitmap.Config.ARGB_8888)
+        bmp.setPremultiplied(false)
+        bmp.setPixels(data, 0, sw, 0, 0, sw, sh)
         bmp.compress(Bitmap.CompressFormat.PNG, 100, out)
         out.flush()
     }

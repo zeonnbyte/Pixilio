@@ -15,15 +15,15 @@ import kotlin.math.max
 import kotlin.math.min
 
 enum class Tool(val label: String) {
-    PENCIL("✏️ Pensil"),
-    ERASER("🧽 Hapus"),
-    FILL("🪣 Isi"),
-    PICKER("💧 Pipet"),
-    LINE("📏 Garis"),
-    RECT("▭ Kotak"),
-    ELLIPSE("◯ Elips"),
-    SELECT("⬚ Pilih"),
-    PAN("✋ Geser")
+    PENCIL("Pensil"),
+    ERASER("Penghapus"),
+    FILL("Isi"),
+    PICKER("Pipet"),
+    LINE("Garis"),
+    RECT("Kotak"),
+    ELLIPSE("Elips"),
+    SELECT("Pilih"),
+    PAN("Geser")
 }
 
 class Layer(name: String, var pixels: IntArray) {
@@ -65,7 +65,7 @@ class Changes(val uniform: Boolean = false, val uo: Int = 0, val un: Int = 0) {
 /** Gabungkan satu piksel (src) di atas dst, ARGB lurus (non-premultiplied). */
 fun blendOver(dst: Int, src: Int, opacity: Float): Int {
     var sa = src ushr 24
-    if (opacity < 1f) sa = (sa * opacity).toInt()
+    if (opacity < 1f) sa = (sa * opacity + 0.5f).toInt()
     if (sa == 0) return dst
     val da = dst ushr 24
     if (sa == 255 || da == 0) return (sa shl 24) or (src and 0xFFFFFF)
@@ -73,9 +73,9 @@ fun blendOver(dst: Int, src: Int, opacity: Float): Int {
     val outA = sa + (da * ia + 127) / 255
     if (outA == 0) return 0
     val d = outA * 255
-    val r = (((src shr 16) and 255) * sa * 255 + ((dst shr 16) and 255) * da * ia) / d
-    val g = (((src shr 8) and 255) * sa * 255 + ((dst shr 8) and 255) * da * ia) / d
-    val b = ((src and 255) * sa * 255 + (dst and 255) * da * ia) / d
+    val r = (((src shr 16) and 255) * sa * 255 + ((dst shr 16) and 255) * da * ia + d / 2) / d
+    val g = (((src shr 8) and 255) * sa * 255 + ((dst shr 8) and 255) * da * ia + d / 2) / d
+    val b = ((src and 255) * sa * 255 + (dst and 255) * da * ia + d / 2) / d
     return (min(outA, 255) shl 24) or (min(r, 255) shl 16) or (min(g, 255) shl 8) or min(b, 255)
 }
 
@@ -96,7 +96,18 @@ class Editor {
     var active by mutableIntStateOf(0)
     var version by mutableIntStateOf(0)
 
-    var tool by mutableStateOf(Tool.PENCIL)
+    private var toolState by mutableStateOf(Tool.PENCIL)
+    var tool: Tool
+        get() = toolState
+        set(value) {
+            if (value == toolState) return
+            // ganti tool dulu, supaya commitFloat tidak membuat ulang seleksi dari tool lama
+            toolState = value
+            if (floating != null) commitFloat()
+            selection = null
+            dragMode = 0
+            clearPreview()
+        }
     var color by mutableIntStateOf(0xFF000000.toInt())
     val recent = mutableStateListOf<Int>()
     val palette = mutableStateListOf<Int>()
@@ -525,7 +536,12 @@ class Editor {
 
     private fun pick(x: Int, y: Int) {
         if (x < 0 || y < 0 || x >= width || y >= height) return
-        useColor(pixelAt(x, y, false))
+        val c = pixelAt(x, y, false)
+        if ((c ushr 24) == 0) {
+            onMessage("Piksel transparan, warna tidak diambil")
+            return
+        }
+        useColor(c)
     }
 
     // ---------------------------------------------------------------- warna
@@ -652,7 +668,7 @@ class Editor {
 
     fun copySelection(cut: Boolean, merged: Boolean = false) {
         val s = selection ?: run {
-            onMessage("Pilih area dulu dengan alat ⬚ Pilih")
+            onMessage("Pilih area dulu dengan alat Pilih")
             return
         }
         val l = activeLayer() ?: return
@@ -689,6 +705,12 @@ class Editor {
 
     fun paste(c: Clip) {
         if (floating != null) commitFloat()
+        if (toolState != Tool.SELECT) {
+            // tempel selalu terjadi di mode Pilih, supaya tidak "bocor" ke tool lain
+            toolState = Tool.SELECT
+            dragMode = 0
+            clearPreview()
+        }
         floating = c
         val s = selection
         floatPos = if (s != null) {
@@ -725,7 +747,7 @@ class Editor {
         val y0 = max(fy, 0)
         val x1 = min(fx + c.w - 1, width - 1)
         val y1 = min(fy + c.h - 1, height - 1)
-        selection = if (x1 >= x0 && y1 >= y0) intArrayOf(x0, y0, x1, y1) else null
+        selection = if (tool == Tool.SELECT && x1 >= x0 && y1 >= y0) intArrayOf(x0, y0, x1, y1) else null
         version++
     }
 
