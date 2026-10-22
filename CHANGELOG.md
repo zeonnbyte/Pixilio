@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.20.2026-alpha
+- Beranda: tampilan proyek bisa grid atau memanjang (list), pilihan diingat
+- Beranda: pencarian proyek/folder, tidak peduli huruf besar atau kecil
+- Halaman Pengaturan baru (bahasa, lisensi, tentang) lewat ikon di Beranda; Lisensi memuat lisensi pustaka yang dipakai
+- Latar kotak-kotak kanvas: yang tadinya putih jadi abu-abu agak gelap
+- Menu titik tiga proyek: tambah Ekspor file .pixilio dan Ekspor PNG
+## 0.0.19.2026-alpha
+- Beranda: tombol + sekarang membuka pilihan Proyek baru / Impor gambar; gambar diimpor jadi proyek baru di folder yang sedang dibuka
+
+## 0.0.18.2026-alpha
+- README ditulis ulang khusus untuk pengguna (cara download dan fitur), info build dan signing dihapus
+
 ## 0.0.17.2026-alpha
 - Ikon aplikasi jadi adaptive icon: ikut bentuk bulat/squircle launcher (Android 8+), Android 7 tetap ikon kotak
 

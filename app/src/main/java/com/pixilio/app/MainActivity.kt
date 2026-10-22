@@ -40,6 +40,9 @@ class MainActivity : ComponentActivity() {
     private var dir: File by mutableStateOf(File(""))
     private var current by mutableStateOf<File?>(null)
     private var refresh by mutableIntStateOf(0)
+    private var gridView by mutableStateOf(false)
+    private var showSettings by mutableStateOf(false)
+    private var pendingCopy: File? = null
 
     private fun saveTo(f: File, quiet: Boolean = false, copy: Boolean = true, done: (() -> Unit)? = null) {
         val snap = try {
@@ -167,13 +170,22 @@ class MainActivity : ComponentActivity() {
 
     private val imageLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
+            val base = displayName(uri)
             Thread {
                 try {
                     val input = contentResolver.openInputStream(uri) ?: throw IOException("Tidak bisa membaca file")
                     val img = input.use { ProjectIO.decodeImage(it) } ?: throw IOException("Bukan gambar yang valid")
                     runOnUiThread {
                         try {
-                            if (editor.newDoc(img.w, img.h, img.px, "Gambar")) toast("Gambar diimpor")
+                            if (editor.newDoc(img.w, img.h, img.px, "Gambar")) {
+                                if (current == null) {
+                                    // dari Beranda (tombol +): jadi proyek baru di folder yang sedang dibuka
+                                    val f = ProjectStore.projectFile(dir, base)
+                                    current = f
+                                    saveTo(f, copy = false)
+                                }
+                                toast("Gambar diimpor")
+                            }
                         } catch (t: Throwable) {
                             fail(t)
                         }
@@ -183,6 +195,42 @@ class MainActivity : ComponentActivity() {
                 }
             }.start()
         }
+    }
+
+    private val copyLauncher = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("application/octet-stream")
+    ) { uri ->
+        val src = pendingCopy
+        pendingCopy = null
+        if (uri != null && src != null) {
+            bg("Proyek diekspor") {
+                val out = contentResolver.openOutputStream(uri) ?: throw IOException("Tidak bisa menulis file")
+                out.use { o -> FileInputStream(src).use { it.copyTo(o) } }
+            }
+        }
+    }
+
+    /** Ekspor proyek dari Beranda (menu titik tiga) sebagai file .pixilio ke lokasi pilihan pengguna. */
+    private fun exportProjectFile(e: Entry) {
+        pendingCopy = e.file
+        copyLauncher.launch(e.name + ProjectStore.EXT)
+    }
+
+    /** Ekspor proyek dari Beranda sebagai PNG ke Pictures/Pixilio. */
+    private fun exportProjectPng(e: Entry, sc: Int) {
+        Thread {
+            try {
+                val snap = FileInputStream(e.file).use { ProjectIO.read(it) }
+                if (sc < 1 || snap.w.toLong() * sc * snap.h * sc > Int.MAX_VALUE.toLong()) {
+                    toast("Skala terlalu besar")
+                    return@Thread
+                }
+                val job = ExportJob(ProjectIO.flatten(snap), snap.w, snap.h, sc)
+                runOnUiThread { launchExport(job) }
+            } catch (t: Throwable) {
+                fail(t)
+            }
+        }.start()
     }
 
     private class ExportJob(val px: IntArray, val w: Int, val h: Int, val sc: Int)
@@ -219,17 +267,20 @@ class MainActivity : ComponentActivity() {
                 toast("Skala terlalu besar")
                 return
             }
-            val job = ExportJob(ProjectIO.compositePixels(editor), w, h, sc)
-            if (Build.VERSION.SDK_INT < 29 &&
-                checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
-            ) {
-                pendingExport = job
-                storagePerm.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            } else {
-                doExport(job)
-            }
+            launchExport(ExportJob(ProjectIO.compositePixels(editor), w, h, sc))
         } catch (t: Throwable) {
             fail(t)
+        }
+    }
+
+    private fun launchExport(job: ExportJob) {
+        if (Build.VERSION.SDK_INT < 29 &&
+            checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+        ) {
+            pendingExport = job
+            storagePerm.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        } else {
+            doExport(job)
         }
     }
 
@@ -356,6 +407,7 @@ class MainActivity : ComponentActivity() {
 
         val prefs = getSharedPreferences("pixilio", MODE_PRIVATE)
         Lang.load(prefs.getString("lang", "system") ?: "system")
+        gridView = prefs.getBoolean("grid", false)
         Lang.onChange = { prefs.edit().putString("lang", Lang.mode).apply() }
         val saved = prefs.getString("palette", null)
         if (!saved.isNullOrEmpty()) {
@@ -393,20 +445,32 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme(colorScheme = darkColorScheme()) {
                 val c = current
-                BackHandler(enabled = c != null || dir != rootDir) {
-                    if (current != null) goHome() else dir.parentFile?.let { dir = it }
+                BackHandler(enabled = c != null || dir != rootDir || showSettings) {
+                    if (showSettings) showSettings = false
+                    else if (current != null) goHome() else dir.parentFile?.let { dir = it }
                 }
-                if (c == null) {
+                if (showSettings) {
+                    SettingsScreen(version) { showSettings = false }
+                } else if (c == null) {
                     HomeScreen(
                         root = rootDir,
                         dir = dir,
                         refresh = refresh,
+                        grid = gridView,
+                        onGrid = { g ->
+                            gridView = g
+                            prefs.edit().putBoolean("grid", g).apply()
+                        },
+                        onSettings = { showSettings = true },
                         onDir = { dir = it },
                         onOpen = { openEntry(it) },
                         onCreate = { n, w, h -> createProject(n, w, h) },
+                        onImportImage = { imageLauncher.launch(arrayOf("image/*")) },
                         onFolder = { makeFolder(it) },
                         onRename = { e, n -> renameEntry(e, n) },
-                        onDelete = { ProjectStore.delete(it) }
+                        onDelete = { ProjectStore.delete(it) },
+                        onExportFile = { exportProjectFile(it) },
+                        onExportPng = { e, sc -> exportProjectPng(e, sc) }
                     )
                 } else {
                     App(editor, actions, c.name.removeSuffix(ProjectStore.EXT)) { goHome() }

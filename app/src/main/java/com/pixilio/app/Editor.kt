@@ -207,7 +207,7 @@ class Editor {
 
     fun pixelAt(x: Int, y: Int, checker: Boolean): Int {
         val i = y * width + x
-        var c = if (checker) (if (((x + y) and 1) == 0) -1 else 0xFFD0D0D0.toInt()) else 0
+        var c = if (checker) (if (((x + y) and 1) == 0) 0xFFA4A4A4.toInt() else 0xFF8A8A8A.toInt()) else 0
         for (l in layers) {
             if (!l.visible) continue
             c = blendOver(c, l.pixels[i], l.opacity)

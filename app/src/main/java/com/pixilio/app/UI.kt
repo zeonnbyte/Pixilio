@@ -202,7 +202,7 @@ fun App(e: Editor, a: Actions, name: String, onHome: () -> Unit) {
         "color" -> ColorDialog(e) { dlg = "" }
         "layers" -> LayersDialog(e) { dlg = "" }
         "clips" -> ClipsDialog(e) { dlg = "" }
-        "export" -> ExportDialog(e, { sc -> dlg = ""; a.exportPng(sc) }, { dlg = "" })
+        "export" -> ExportDialog(e.width, e.height, { sc -> dlg = ""; a.exportPng(sc) }, { dlg = "" })
         "about" -> AlertDialog(
             onDismissRequest = { dlg = "" },
             title = { Text("Pixilio : Pixel Art") },
@@ -640,12 +640,12 @@ fun ClipsDialog(e: Editor, onDismiss: () -> Unit) {
 }
 
 @Composable
-fun ExportDialog(e: Editor, onOk: (Int) -> Unit, onDismiss: () -> Unit) {
+fun ExportDialog(w: Int, h: Int, onOk: (Int) -> Unit, onDismiss: () -> Unit) {
     var s by remember { mutableStateOf("1") }
     val sc = s.toIntOrNull() ?: 1
     val errS = Check.dim(s, "Minimal 1x")
-    val ow = e.width.toLong() * sc
-    val oh = e.height.toLong() * sc
+    val ow = w.toLong() * sc
+    val oh = h.toLong() * sc
     val big = if (errS == null) Check.tooBig(ow, oh) else null
     val err = errS ?: big
     AlertDialog(
@@ -670,7 +670,7 @@ fun ExportDialog(e: Editor, onOk: (Int) -> Unit, onDismiss: () -> Unit) {
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
-                Text("Hasil: ${e.width.toLong() * sc} × ${e.height.toLong() * sc} px", fontSize = 13.sp)
+                Text("Hasil: ${w.toLong() * sc} × ${h.toLong() * sc} px", fontSize = 13.sp)
                 if (err == null) Check.memory(ow, oh, 0)?.let { Warn(it) }
                 Text("Disimpan ke Pictures/Pixilio", fontSize = 12.sp)
             }

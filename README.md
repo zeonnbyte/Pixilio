@@ -2,47 +2,46 @@
 
 # Pixilio
 
-**Editor pixel art untuk Android**
+**Editor pixel art ringan untuk Android**
 
-![Versi](https://img.shields.io/badge/versi-0.0.17--alpha-orange)
-![Platform](https://img.shields.io/badge/platform-Android%207.0%2B-3DDC84?logo=android&logoColor=white)
-![Kotlin](https://img.shields.io/badge/Kotlin-Jetpack%20Compose-7F52FF?logo=kotlin&logoColor=white)
+![Versi](https://img.shields.io/badge/versi-0.0.20--alpha-orange)
+![Platform](https://img.shields.io/badge/Android-7.0%2B-3DDC84?logo=android&logoColor=white)
 
 </div>
 
-Pixilio adalah editor pixel art ringan buat Android, dibuat dengan Kotlin dan Jetpack Compose. Tanpa iklan, tanpa batas ukuran kanvas dari aplikasi (batasnya RAM perangkat).
+Pixilio adalah aplikasi untuk menggambar pixel art di HP. Tanpa iklan, dan ukuran kanvas tidak dibatasi aplikasi (batasnya RAM perangkat).
+
+## Download
+
+1. Buka tab **Releases** di halaman ini, lalu download file **APK** terbaru.
+2. Buka file APK-nya di HP. Kalau diminta, izinkan install dari sumber tidak dikenal.
+3. Selesai, buka **Pixilio**.
+
+Butuh Android 7.0 atau lebih baru.
+
+> Pixilio masih tahap **alpha**, jadi mungkin masih ada bug. Simpan proyek pentingmu dengan ekspor `.pixilio` sebagai cadangan.
 
 ## Fitur
 
-- **Beranda:** daftar proyek dengan preview gambar, folder, tombol **+** proyek baru, ganti nama, hapus, autosave
+- **Proyek:** daftar proyek dengan preview (tampilan grid atau list), pencarian, folder, ganti nama, ekspor, hapus, simpan otomatis
 - **Alat:** pensil, penghapus, isi (fill), pipet, garis, kotak, elips, pilih area, geser
 - **Kuas:** ukuran 1-64, simetri X/Y, isi bentuk
-- **Warna:** palet 32 warna, color picker mode **Wheel** dan **Biasa**, kode HEX / RGB / HSL / HSV / CMYK / 0xARGB, palet tersimpan
+- **Warna:** palet 32 warna, color picker, kode HEX / RGB / HSL / HSV / CMYK / 0xARGB, palet tersimpan
 - **Layer:** tambah, duplikat, hapus, urutan, gabung ke bawah, visibilitas, opasitas
 - **Clipboard:** salin, potong, tempel, riwayat clipboard
-- **Kanvas:** undo/redo, pinch zoom, grid, ubah ukuran (opsi skala gambar), putar 90°, balik horizontal/vertikal
-- **File:** proyek `.pixilio`, ekspor PNG berskala langsung ke `Pictures/Pixilio`, impor gambar
-- **Buka dengan:** Pixilio muncul di daftar "Buka dengan" / Bagikan untuk gambar dan file `.pixilio` dari file manager mana pun (ZArchiver, Explorer, bawaan, dll.)
-- **Latar:** kotak-kotak, 1 kotak = 16 piksel kanvas (kanvas 16 = polos, 32 = 2×2, 64 = 4×4, dst)
-- **Validasi:** pesan peringatan untuk input yang tidak sesuai (ukuran, skala, nama, memori)
-- **Bahasa:** Default (ikut sistem), Indonesia, English
-- **Ikon:** gaya [Lucide](https://lucide.dev)
+- **Kanvas:** undo/redo, pinch zoom, grid, ubah ukuran (bisa sekaligus skala gambar), putar 90°, balik horizontal/vertikal
+- **Ekspor PNG:** langsung tersimpan di `Pictures/Pixilio`, dengan skala yang bisa dipilih
+- **Impor:** tombol **+** di Beranda punya pilihan *Impor gambar* untuk membuat proyek baru dari gambar
+- **Buka dengan / Bagikan:** Pixilio muncul untuk gambar dan file `.pixilio` dari file manager atau galeri
+- **Peringatan:** pesan jelas kalau input tidak sesuai (ukuran, skala, nama, kode warna, memori)
+- **Bahasa:** ikut sistem, Indonesia, atau English
+- **Pengaturan:** bahasa, lisensi pustaka open source, dan info aplikasi
 
-## Instalasi
+## Tips
 
-Download APK dari tab **Releases** atau dari artifact **Actions**, lalu install di HP (izinkan install dari sumber tidak dikenal).
-
-## Build
-
-**Android Studio:** buka folder ini (JDK 17), tunggu Gradle sync, lalu *Build > Build APK(s)*.
-
-**GitHub Actions:** push ke `main` (atau jalankan manual di tab **Actions > Build APK**), lalu download artifact **Pixilio APK**.
-
-**AndroidIDE:** buka folder project, sync Gradle, lalu *Build > Build APK*.
-
-### Signing
-
-APK release ditandatangani lewat GitHub Secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Kalau kosong, build memakai debug key. Jangan commit file `.jks` dan simpan backup keystore-nya, kalau hilang update tidak bisa menimpa versi lama.
+- Hasil ekspor ada di folder **Pictures/Pixilio**, dengan nama `tanggal jam nomor.png`, misalnya `22.10.2026 14.30 1.png`.
+- Di Android 9 ke bawah, aplikasi akan meminta izin penyimpanan saat ekspor pertama. Android 10 ke atas tidak perlu izin.
+- Menurunkan ukuran kanvas tanpa "Skala gambar" akan memotong gambar. Aktifkan toggle-nya kalau mau gambar ikut mengecil.
 
 ## Changelog
 

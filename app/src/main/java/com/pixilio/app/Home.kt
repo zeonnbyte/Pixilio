@@ -47,6 +47,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.io.File
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.draw.clip
@@ -67,17 +74,29 @@ fun HomeScreen(
     root: File,
     dir: File,
     refresh: Int,
+    grid: Boolean,
+    onGrid: (Boolean) -> Unit,
+    onSettings: () -> Unit,
     onDir: (File) -> Unit,
     onOpen: (File) -> Unit,
     onCreate: (String, Int, Int) -> Unit,
+    onImportImage: () -> Unit,
     onFolder: (String) -> Boolean,
     onRename: (Entry, String) -> Boolean,
-    onDelete: (Entry) -> Unit
+    onDelete: (Entry) -> Unit,
+    onExportFile: (Entry) -> Unit,
+    onExportPng: (Entry, Int) -> Unit
 ) {
     var tick by remember { mutableIntStateOf(0) }
     var dlg by remember { mutableStateOf("") }
+    var plusMenu by remember { mutableStateOf(false) }
     var target by remember { mutableStateOf<Entry?>(null) }
-    val entries = remember(dir, refresh, tick) { ProjectStore.list(dir) }
+    var searching by remember(dir) { mutableStateOf(false) }
+    var query by remember(dir) { mutableStateOf("") }
+    val all = remember(dir, refresh, tick) { ProjectStore.list(dir) }
+    val q = query.trim()
+    // pencarian tidak peduli huruf besar/kecil
+    val entries = if (q.isEmpty()) all else all.filter { it.name.contains(q, ignoreCase = true) }
     val atRoot = dir == root
     val path = if (atRoot) "" else dir.relativeTo(root).path.replace(File.separatorChar, '/')
 
@@ -114,15 +133,71 @@ fun HomeScreen(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                IconButton(onClick = { dlg = "lang" }) { Icon(Lu.Languages, null, tint = Color.White) }
+                IconButton(onClick = {
+                    if (searching) {
+                        searching = false
+                        query = ""
+                    } else {
+                        searching = true
+                    }
+                }) { Icon(if (searching) Lu.X else Lu.Search, null, tint = Color.White) }
+                IconButton(onClick = { onGrid(!grid) }) {
+                    Icon(if (grid) Lu.ListLines else Lu.LayoutGrid, null, tint = Color.White)
+                }
+                IconButton(onClick = onSettings) { Icon(Lu.Sliders, null, tint = Color.White) }
             }
-            if (entries.isEmpty()) {
+            if (searching) {
+                val focus = remember { FocusRequester() }
+                LaunchedEffect(Unit) { focus.requestFocus() }
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it.take(60) },
+                    placeholder = { Text("Cari proyek") },
+                    leadingIcon = { Icon(Lu.Search, null) },
+                    trailingIcon = if (query.isNotEmpty()) ({
+                        IconButton(onClick = { query = "" }) { Icon(Lu.X, null) }
+                    }) else null,
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 4.dp)
+                        .focusRequester(focus)
+                )
+            }
+            if (all.isEmpty()) {
                 Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
                     Text(
                         "Belum ada isi.\nKetuk + untuk proyek baru, atau ikon folder untuk folder.",
                         color = Color(0x99FFFFFF),
                         textAlign = TextAlign.Center
                     )
+                }
+            } else if (entries.isEmpty()) {
+                Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.TopCenter) {
+                    Text(
+                        "Tidak ada hasil untuk \"$q\"",
+                        color = Color(0x99FFFFFF),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            } else if (grid) {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(150.dp),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 160.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(entries, key = { it.file.path }) { e ->
+                        EntryCard(
+                            e,
+                            onClick = { if (e.isDir) onDir(e.file) else onOpen(e.file) },
+                            onRename = { target = e; dlg = "rename" },
+                            onExportFile = { onExportFile(e) },
+                            onExportPng = { target = e; dlg = "exportpng" },
+                            onDelete = { target = e; dlg = "delete" }
+                        )
+                    }
                 }
             } else {
                 LazyColumn(
@@ -135,6 +210,8 @@ fun HomeScreen(
                             e,
                             onClick = { if (e.isDir) onDir(e.file) else onOpen(e.file) },
                             onRename = { target = e; dlg = "rename" },
+                            onExportFile = { onExportFile(e) },
+                            onExportPng = { target = e; dlg = "exportpng" },
                             onDelete = { target = e; dlg = "delete" }
                         )
                     }
@@ -149,22 +226,40 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             SmallFloatingActionButton(onClick = { dlg = "folder" }) { Icon(Lu.FolderPlus, null) }
-            FloatingActionButton(onClick = { dlg = "project" }) { Icon(Lu.Plus, null) }
+            Box {
+                FloatingActionButton(onClick = { plusMenu = true }) { Icon(Lu.Plus, null) }
+                DropdownMenu(expanded = plusMenu, onDismissRequest = { plusMenu = false }) {
+                    DropdownMenuItem(text = { Text("Proyek baru") }, onClick = { plusMenu = false; dlg = "project" })
+                    DropdownMenuItem(text = { Text("Impor gambar") }, onClick = { plusMenu = false; onImportImage() })
+                }
+            }
         }
     }
 
     val t = target
     when (dlg) {
-        "lang" -> LanguageDialog { dlg = "" }
         "project" -> ProjectDialog({ n, w, h -> dlg = ""; onCreate(n, w, h) }, { dlg = "" })
-        "folder" -> NameDialog("Folder baru", "", "Nama folder", { n -> entries.any { it.isDir && it.name == n } }, { n ->
+        "folder" -> NameDialog("Folder baru", "", "Nama folder", { n -> all.any { it.isDir && it.name == n } }, { n ->
             dlg = ""
             if (onFolder(n)) tick++
         }, { dlg = "" })
-        "rename" -> if (t != null) NameDialog("Ganti nama", t.name, "Nama", { n -> entries.any { it !== t && it.isDir == t.isDir && it.name == n } }, { n ->
+        "rename" -> if (t != null) NameDialog("Ganti nama", t.name, "Nama", { n -> all.any { it !== t && it.isDir == t.isDir && it.name == n } }, { n ->
             dlg = ""
             if (onRename(t, n)) tick++
         }, { dlg = "" })
+        "exportpng" -> if (t != null) {
+            val sz = remember(t.file.path) { ProjectIO.readSize(t.file) }
+            if (sz == null) {
+                AlertDialog(
+                    onDismissRequest = { dlg = "" },
+                    title = { Text("Ekspor PNG") },
+                    text = { Text("File proyek rusak") },
+                    confirmButton = { TextButton(onClick = { dlg = "" }) { Text("OK") } }
+                )
+            } else {
+                ExportDialog(sz.first, sz.second, { sc -> dlg = ""; onExportPng(t, sc) }, { dlg = "" })
+            }
+        }
         "delete" -> if (t != null) AlertDialog(
             onDismissRequest = { dlg = "" },
             title = { Text(if (t.isDir) "Hapus folder?" else "Hapus proyek?") },
@@ -183,16 +278,46 @@ fun HomeScreen(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun EntryRow(e: Entry, onClick: () -> Unit, onRename: () -> Unit, onDelete: () -> Unit) {
-    var menu by remember { mutableStateOf(false) }
-    val info = if (e.isDir) {
+private fun entryInfo(e: Entry): String =
+    if (e.isDir) {
         "${ProjectStore.count(e.file)} item"
     } else {
         SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault()).format(Date(e.file.lastModified())) +
             "  •  " + (e.file.length() / 1024) + " KB"
     }
+
+/** Menu titik tiga: ganti nama, ekspor (khusus proyek), hapus. */
+@Composable
+private fun EntryMenu(
+    e: Entry,
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+    onRename: () -> Unit,
+    onExportFile: () -> Unit,
+    onExportPng: () -> Unit,
+    onDelete: () -> Unit
+) {
+    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
+        DropdownMenuItem(text = { Text("Ganti nama") }, onClick = { onDismiss(); onRename() })
+        if (!e.isDir) {
+            DropdownMenuItem(text = { Text("Ekspor file .pixilio") }, onClick = { onDismiss(); onExportFile() })
+            DropdownMenuItem(text = { Text("Ekspor PNG") }, onClick = { onDismiss(); onExportPng() })
+        }
+        DropdownMenuItem(text = { Text("Hapus") }, onClick = { onDismiss(); onDelete() })
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun EntryRow(
+    e: Entry,
+    onClick: () -> Unit,
+    onRename: () -> Unit,
+    onExportFile: () -> Unit,
+    onExportPng: () -> Unit,
+    onDelete: () -> Unit
+) {
+    var menu by remember { mutableStateOf(false) }
     Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFF2A2A2A), modifier = Modifier.fillMaxWidth()) {
         Row(
             Modifier
@@ -200,17 +325,61 @@ private fun EntryRow(e: Entry, onClick: () -> Unit, onRename: () -> Unit, onDele
                 .padding(start = 14.dp, top = 6.dp, bottom = 6.dp, end = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (e.isDir) Icon(Lu.Folder, null, tint = Color.White, modifier = Modifier.size(28.dp)) else Thumb(e.file)
+            if (e.isDir) {
+                Icon(Lu.Folder, null, tint = Color.White, modifier = Modifier.size(28.dp))
+            } else {
+                Thumb(e.file, Modifier.size(56.dp))
+            }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(e.name, color = Color.White, fontSize = 17.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(info, color = Color(0x99FFFFFF), fontSize = 12.sp, maxLines = 1)
+                Text(entryInfo(e), color = Color(0x99FFFFFF), fontSize = 12.sp, maxLines = 1)
             }
             Box {
                 IconButton(onClick = { menu = true }) { Icon(Lu.EllipsisVertical, null, tint = Color.White) }
-                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                    DropdownMenuItem(text = { Text("Ganti nama") }, onClick = { menu = false; onRename() })
-                    DropdownMenuItem(text = { Text("Hapus") }, onClick = { menu = false; onDelete() })
+                EntryMenu(e, menu, { menu = false }, onRename, onExportFile, onExportPng, onDelete)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun EntryCard(
+    e: Entry,
+    onClick: () -> Unit,
+    onRename: () -> Unit,
+    onExportFile: () -> Unit,
+    onExportPng: () -> Unit,
+    onDelete: () -> Unit
+) {
+    var menu by remember { mutableStateOf(false) }
+    Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFF2A2A2A), modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.combinedClickable(onClick = onClick, onLongClick = { menu = true })) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .padding(10.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (e.isDir) {
+                    Icon(Lu.Folder, null, tint = Color.White, modifier = Modifier.size(64.dp))
+                } else {
+                    Thumb(e.file, Modifier.fillMaxSize())
+                }
+            }
+            Row(
+                Modifier.padding(start = 12.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(e.name, color = Color.White, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(entryInfo(e), color = Color(0x99FFFFFF), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                Box {
+                    IconButton(onClick = { menu = true }) { Icon(Lu.EllipsisVertical, null, tint = Color.White) }
+                    EntryMenu(e, menu, { menu = false }, onRename, onExportFile, onExportPng, onDelete)
                 }
             }
         }
@@ -313,11 +482,11 @@ private fun ProjectDialog(onOk: (String, Int, Int) -> Unit, onDismiss: () -> Uni
 }
 
 @Composable
-private fun Thumb(f: File) {
+private fun Thumb(f: File, modifier: Modifier) {
     val img by produceState<ImageBitmap?>(null, f.path, f.lastModified()) {
         value = withContext(Dispatchers.IO) { ProjectIO.loadThumb(f)?.asImageBitmap() }
     }
-    Box(Modifier.size(56.dp).clip(RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+    Box(modifier.clip(RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
         val b = img
         if (b == null) {
             Icon(Lu.Palette, null, tint = Color.White, modifier = Modifier.size(28.dp))

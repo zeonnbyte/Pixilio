@@ -187,6 +187,29 @@ object Lu {
             "m2 2 20 20"
         )
     }
+
+    val Search by lazy {
+        icon("Search", "m21 21-4.3-4.3", "M11 3a8 8 0 1 0 0 16a8 8 0 1 0 0-16z")
+    }
+    val LayoutGrid by lazy {
+        icon(
+            "LayoutGrid",
+            "M4 3h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z",
+            "M15 3h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z",
+            "M15 14h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1z",
+            "M4 14h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1z"
+        )
+    }
+    val ListLines by lazy {
+        icon("List", "M3 12h.01", "M3 18h.01", "M3 6h.01", "M8 12h13", "M8 18h13", "M8 6h13")
+    }
+    val Sliders by lazy {
+        icon(
+            "SlidersHorizontal",
+            "M10 5H3", "M12 19H3", "M14 3v4", "M16 17v4", "M21 12h-9", "M21 19h-5", "M21 5h-7", "M8 10v4", "M8 12H3"
+        )
+    }
+    val ChevronRight by lazy { icon("ChevronRight", "m9 18 6-6-6-6") }
 }
 
 fun toolIcon(t: Tool): ImageVector = when (t) {

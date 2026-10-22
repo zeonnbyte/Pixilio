@@ -12,15 +12,19 @@ import kotlin.math.min
 /** 1 kotak latar = 16 piksel kanvas (kanvas 16 = polos, 32 = 2x2, 64 = 4x4, dst). */
 const val CHECKER_PX = 16
 
-/** Gambar latar kotak-kotak putih/abu di area (left, top, w, h), dipotong ke layar. cell = ukuran kotak di layar. */
+/** Warna kotak latar: abu-abu agak gelap (terang & gelap). */
+val CHECKER_LIGHT = Color(0xFFA4A4A4)
+val CHECKER_DARK = Color(0xFF8A8A8A)
+
+/** Gambar latar kotak-kotak abu-abu di area (left, top, w, h), dipotong ke layar. cell = ukuran kotak di layar. */
 fun DrawScope.drawChecker(left: Float, top: Float, w: Float, h: Float, cell: Float) {
     val l = max(left, 0f)
     val t = max(top, 0f)
     val r = min(left + w, size.width)
     val b = min(top + h, size.height)
     if (r <= l || b <= t || cell <= 0f) return
-    drawRect(Color.White, Offset(l, t), Size(r - l, b - t))
-    val dark = Color(0xFFD0D0D0)
+    drawRect(CHECKER_LIGHT, Offset(l, t), Size(r - l, b - t))
+    val dark = CHECKER_DARK
     val c0 = floor((l - left) / cell).toInt()
     val c1 = ceil((r - left) / cell).toInt()
     val r0 = floor((t - top) / cell).toInt()

@@ -164,6 +164,34 @@ object ProjectIO {
         return ImageData(w, h, px)
     }
 
+    /** Baca ukuran kanvas saja dari file proyek (tanpa memuat piksel). */
+    fun readSize(f: File): Pair<Int, Int>? {
+        val r: Pair<Int, Int>? = try {
+            DataInputStream(BufferedInputStream(GZIPInputStream(FileInputStream(f)), 1 shl 12)).use { d ->
+                val ok = d.readInt() == MAGIC
+                d.readInt()
+                val w = d.readInt()
+                val h = d.readInt()
+                if (!ok || w < 1 || h < 1) null else Pair(w, h)
+            }
+        } catch (x: Throwable) {
+            null
+        }
+        return r
+    }
+
+    /** Gabungkan semua layer yang terlihat dari snapshot menjadi satu gambar (sama dengan tampilan editor). */
+    fun flatten(s: DocSnapshot): IntArray {
+        val out = IntArray(s.w * s.h)
+        for (li in s.pix.indices) {
+            if (!s.vis[li]) continue
+            val p = s.pix[li]
+            val o = s.op[li]
+            for (i in out.indices) out[i] = blendOver(out[i], p[i], o)
+        }
+        return out
+    }
+
     fun compositePixels(e: Editor): IntArray {
         val w = e.width
         val h = e.height
