@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.0.16.2026-alpha
+- Ikon aplikasi: hati merah pixel art baru (12×12)
+
 ## 0.0.15.2026-alpha
 - Peringatan input dilengkapi: kode warna tidak valid, nama sudah dipakai (folder/ganti nama), karakter nama yang diganti spasi
 - Ekspor PNG: nomor urut hari itu hanya naik kalau ekspor berhasil; Android 9 ke bawah tidak menimpa file yang sudah ada

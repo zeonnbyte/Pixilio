@@ -4,7 +4,7 @@
 
 **Editor pixel art untuk Android**
 
-![Versi](https://img.shields.io/badge/versi-0.0.15--alpha-orange)
+![Versi](https://img.shields.io/badge/versi-0.0.16--alpha-orange)
 ![Platform](https://img.shields.io/badge/platform-Android%207.0%2B-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-Jetpack%20Compose-7F52FF?logo=kotlin&logoColor=white)
 

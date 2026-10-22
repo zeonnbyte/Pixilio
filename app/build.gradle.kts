@@ -19,8 +19,8 @@ android {
         applicationId = "com.pixilio.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 15
-        versionName = "0.0.15.2026-alpha"
+        versionCode = 16
+        versionName = "0.0.16.2026-alpha"
     }
 
     signingConfigs {
