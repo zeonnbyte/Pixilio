@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.13.2026-alpha
+- Latar kotak-kotak: 1 kotak = 16 piksel kanvas (kanvas 16 polos, 32 = 2x2, 64 = 4x4, 128 = 8x8), berlaku juga di preview proyek
+- Pengaturan ukuran latar dihapus
+
+## 0.0.12.2026-alpha
+- Fix: latar kotak-kotak benar-benar statis, terkunci di layar dan tidak ikut geser/zoom kanvas
+
 ## 0.0.11.2026-alpha
 - Pixilio muncul di "Buka dengan" dan Bagikan: gambar (PNG/JPG/WebP) diimpor jadi proyek baru, file `.pixilio` langsung dibuka
 - Support semua file manager (ZArchiver, Explorer, bawaan, dll.)

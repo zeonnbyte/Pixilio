@@ -113,7 +113,6 @@ fun HomeScreen(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                IconButton(onClick = { dlg = "bg" }) { Icon(Lu.Grid3x3, null, tint = Color.White) }
                 IconButton(onClick = { dlg = "lang" }) { Icon(Lu.Languages, null, tint = Color.White) }
             }
             if (entries.isEmpty()) {
@@ -156,7 +155,6 @@ fun HomeScreen(
     val t = target
     when (dlg) {
         "lang" -> LanguageDialog { dlg = "" }
-        "bg" -> BgDialog { dlg = "" }
         "project" -> ProjectDialog({ n, w, h -> dlg = ""; onCreate(n, w, h) }, { dlg = "" })
         "folder" -> NameDialog("Folder baru", "", "Nama folder", { n ->
             dlg = ""
@@ -304,7 +302,7 @@ private fun Thumb(f: File) {
                 val dh = ih * sc
                 val l = (size.width - dw) / 2f
                 val t = (size.height - dh) / 2f
-                drawChecker(l, t, dw, dh, size.minDimension / 6f)
+                drawChecker(l, t, dw, dh, CHECKER_PX * sc)
                 drawImage(
                     image = b,
                     srcOffset = IntOffset.Zero,

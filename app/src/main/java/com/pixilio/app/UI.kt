@@ -138,7 +138,6 @@ fun App(e: Editor, a: Actions, name: String, onHome: () -> Unit) {
                     MItem("Bersihkan layer") { menu = false; e.clearLayer() }
                     MItem("Pas layar") { menu = false; e.fit() }
                     MItem("Bahasa") { menu = false; dlg = "lang" }
-                    MItem("Latar kotak-kotak") { menu = false; dlg = "bg" }
                     MItem("Tentang") { menu = false; dlg = "about" }
                 }
             }
@@ -198,7 +197,6 @@ fun App(e: Editor, a: Actions, name: String, onHome: () -> Unit) {
             { w, h -> dlg = ""; e.resizeCanvas(w, h) }, { dlg = "" }
         )
         "lang" -> LanguageDialog { dlg = "" }
-        "bg" -> BgDialog { dlg = "" }
         "color" -> ColorDialog(e) { dlg = "" }
         "layers" -> LayersDialog(e) { dlg = "" }
         "clips" -> ClipsDialog(e) { dlg = "" }
@@ -271,7 +269,7 @@ fun PixelCanvas(e: Editor) {
         val w = e.width
         val h = e.height
         val dash = PathEffect.dashPathEffect(floatArrayOf(12f, 10f))
-        drawChecker(o.x, o.y, w * z, h * z, Bg.size.toFloat())
+        drawChecker(o.x, o.y, w * z, h * z, CHECKER_PX * z)
 
         drawImage(
             image = bmp.asImageBitmap(),

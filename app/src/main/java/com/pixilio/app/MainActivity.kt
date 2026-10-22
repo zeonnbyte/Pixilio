@@ -294,8 +294,6 @@ class MainActivity : ComponentActivity() {
         editor.onPaletteChange = {
             prefs.edit().putString("palette", editor.palette.joinToString(",")).apply()
         }
-        Bg.load(prefs.getInt("bg", 32))
-        Bg.onChange = { prefs.edit().putInt("bg", Bg.size).apply() }
         editor.onMessage = { toast(it) }
         editor.newDoc(32, 32)
 

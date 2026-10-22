@@ -1,47 +1,18 @@
 package com.pixilio.app
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.unit.dp
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
 
-/** Ukuran kotak latar (px layar), statis: tidak ikut zoom / ukuran piksel gambar. */
-object Bg {
-    val options = listOf(16, 32, 64, 128, 256)
-    var size by mutableIntStateOf(32)
-        private set
-    var onChange: (() -> Unit)? = null
+/** 1 kotak latar = 16 piksel kanvas (kanvas 16 = polos, 32 = 2x2, 64 = 4x4, dst). */
+const val CHECKER_PX = 16
 
-    fun load(v: Int) {
-        size = if (v in options) v else 32
-    }
-
-    fun set(v: Int) {
-        load(v)
-        onChange?.invoke()
-    }
-}
-
-/** Gambar latar kotak-kotak putih/abu di area (left, top, w, h), dipotong ke layar. */
+/** Gambar latar kotak-kotak putih/abu di area (left, top, w, h), dipotong ke layar. cell = ukuran kotak di layar. */
 fun DrawScope.drawChecker(left: Float, top: Float, w: Float, h: Float, cell: Float) {
     val l = max(left, 0f)
     val t = max(top, 0f)
@@ -64,29 +35,4 @@ fun DrawScope.drawChecker(left: Float, top: Float, w: Float, h: Float, cell: Flo
             if (x1 > x0 && y1 > y0) drawRect(dark, Offset(x0, y0), Size(x1 - x0, y1 - y0))
         }
     }
-}
-
-@Composable
-fun BgDialog(onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Latar kotak-kotak") },
-        text = {
-            Column {
-                Bg.options.forEach { v ->
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .clickable { Bg.set(v) }
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(selected = Bg.size == v, onClick = { Bg.set(v) })
-                        Text("$v px")
-                    }
-                }
-            }
-        },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("OK") } }
-    )
 }
