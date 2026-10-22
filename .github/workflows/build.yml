@@ -5,6 +5,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -46,3 +49,25 @@ jobs:
         with:
           name: Pixilio APK
           path: app/build/outputs/apk/release/*.apk
+
+      - name: Publish ke GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VER=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          cp app/build/outputs/apk/release/*.apk "Pixilio V$VER.apk"
+
+          # Versi ada alpha/beta/rc/dev = pre-release, selain itu = release biasa
+          case "$VER" in
+            *alpha*|*beta*|*-rc*|*dev*) FLAG="--prerelease"; echo "Tipe: pre-release ($VER)" ;;
+            *)                          FLAG="--latest";     echo "Tipe: release stabil ($VER)" ;;
+          esac
+
+          if gh release view "v$VER" > /dev/null 2>&1; then
+            gh release upload "v$VER" "Pixilio V$VER.apk" --clobber
+            gh release edit "v$VER" $FLAG
+          else
+            gh release create "v$VER" "Pixilio V$VER.apk" \
+              --target "$GITHUB_SHA" --title "Pixilio V$VER" \
+              --generate-notes $FLAG
+          fi

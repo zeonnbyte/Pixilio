@@ -1,4 +1,4 @@
-# Pixilio : Pixel Art — V0.0.3.2026-alpha
+# Pixilio : Pixel Art — V0.0.4.2026-alpha
 
 Editor pixel art untuk Android (Kotlin + Jetpack Compose).
 
