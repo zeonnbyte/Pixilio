@@ -1,4 +1,4 @@
-# Pixilio : Pixel Art — V0.0.1.2026-alpha
+# Pixilio : Pixel Art — V0.0.3.2026-alpha
 
 Editor pixel art untuk Android (Kotlin + Jetpack Compose).
 
@@ -27,3 +27,9 @@ Editor pixel art untuk Android (Kotlin + Jetpack Compose).
 
 ### AndroidIDE
 Buka folder project di AndroidIDE, tunggu sync Gradle, lalu Build > Build APK.
+
+## Tanda tangan APK (signing)
+APK release ditandatangani dengan keystore yang disimpan sebagai GitHub Secrets
+(`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`).
+Kalau secret kosong, build memakai debug key. Jangan pernah commit file `.jks`,
+dan simpan backup keystore: kalau hilang, update app tidak bisa menimpa versi lama.

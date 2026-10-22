@@ -23,10 +23,26 @@ jobs:
         with:
           gradle-version: 8.7
 
-      - name: Build debug APK
-        run: gradle assembleDebug --no-daemon
+      - name: Siapkan keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/pixilio.jks"
+            echo "KEYSTORE_PATH=$RUNNER_TEMP/pixilio.jks" >> "$GITHUB_ENV"
+            echo "Keystore dipasang, APK akan ditandatangani"
+          else
+            echo "Secret keystore tidak ada, pakai debug key"
+          fi
+
+      - name: Build release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: gradle assembleRelease --no-daemon
 
       - uses: actions/upload-artifact@v4
         with:
           name: Pixilio APK
-          path: app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/release/*.apk

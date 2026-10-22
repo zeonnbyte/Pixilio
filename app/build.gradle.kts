@@ -3,6 +3,14 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+// Signing: dibaca dari environment (dipakai GitHub Actions). Kalau kosong, pakai debug key.
+val ksPath: String? = System.getenv("KEYSTORE_PATH")
+val ksPass: String? = System.getenv("KEYSTORE_PASSWORD")
+val ksAlias: String? = System.getenv("KEY_ALIAS")
+val ksKeyPass: String? = System.getenv("KEY_PASSWORD")
+val hasKeystore = !ksPath.isNullOrEmpty() && file(ksPath).exists() &&
+    !ksPass.isNullOrEmpty() && !ksAlias.isNullOrEmpty() && !ksKeyPass.isNullOrEmpty()
+
 android {
     namespace = "com.pixilio.app"
     compileSdk = 34
@@ -11,13 +19,26 @@ android {
         applicationId = "com.pixilio.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.0.1.2026-alpha"
+        versionCode = 3
+        versionName = "0.0.3.2026-alpha"
+    }
+
+    signingConfigs {
+        if (hasKeystore) {
+            create("release") {
+                storeFile = file(ksPath!!)
+                storePassword = ksPass
+                keyAlias = ksAlias
+                keyPassword = ksKeyPass
+            }
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = if (hasKeystore) signingConfigs.getByName("release")
+            else signingConfigs.getByName("debug")
         }
     }
     compileOptions {

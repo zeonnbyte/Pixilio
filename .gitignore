@@ -5,3 +5,9 @@
 /build
 /app/build
 .DS_Store
+
+*.jks
+*.keystore
+*.b64
+*.p12
+*.pfx
