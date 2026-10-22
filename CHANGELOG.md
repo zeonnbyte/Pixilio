@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.0.17.2026-alpha
+- Ikon aplikasi jadi adaptive icon: ikut bentuk bulat/squircle launcher (Android 8+), Android 7 tetap ikon kotak
+
 ## 0.0.16.2026-alpha
 - Ikon aplikasi: hati merah pixel art baru (12×12)
 
