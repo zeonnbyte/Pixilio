@@ -1,6 +1,15 @@
 package com.pixilio.app
 
+import android.Manifest
+import android.content.ContentValues
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.media.MediaScannerConnection
+import android.os.Environment
+import android.provider.MediaStore
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -25,7 +34,7 @@ import java.io.IOException
 class MainActivity : ComponentActivity() {
 
     private val editor = Editor()
-    private var pendingScale = 1
+    private var pendingExport: ExportJob? = null
     private val autosaveFile by lazy { File(filesDir, "autosave.pixilio") }
     private val rootDir by lazy { ProjectStore.root(filesDir) }
     private var dir: File by mutableStateOf(File(""))
@@ -176,25 +185,90 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private val pngLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("image/png")) { uri ->
-        if (uri != null) {
+    private class ExportJob(val px: IntArray, val w: Int, val h: Int, val sc: Int)
+
+    private val storagePerm = registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        val job = pendingExport
+        pendingExport = null
+        if (ok && job != null) doExport(job) else toast("Izin penyimpanan ditolak, ekspor dibatalkan")
+    }
+
+    private class ExportName(val name: String, val day: String, val n: Int)
+
+    /** Nama berkas ekspor: "dd.MM.yyyy HH.mm N.png", N = urutan ekspor di hari itu. Baru disimpan setelah ekspor berhasil. */
+    private fun exportName(after: Int = 0): ExportName {
+        val now = Date()
+        val day = SimpleDateFormat("dd.MM.yyyy", Locale.ROOT).format(now)
+        val time = SimpleDateFormat("HH.mm", Locale.ROOT).format(now)
+        val prefs = getSharedPreferences("pixilio", MODE_PRIVATE)
+        val base = if (prefs.getString("exp_day", "") == day) prefs.getInt("exp_n", 0) else 0
+        val n = maxOf(base, after) + 1
+        return ExportName("$day $time $n.png", day, n)
+    }
+
+    private fun commitExport(en: ExportName) {
+        getSharedPreferences("pixilio", MODE_PRIVATE).edit()
+            .putString("exp_day", en.day).putInt("exp_n", en.n).apply()
+    }
+
+    private fun startExport(sc: Int) {
+        try {
+            val w = editor.width
+            val h = editor.height
+            if (sc < 1 || w.toLong() * sc * h * sc > Int.MAX_VALUE.toLong()) {
+                toast("Skala terlalu besar")
+                return
+            }
+            val job = ExportJob(ProjectIO.compositePixels(editor), w, h, sc)
+            if (Build.VERSION.SDK_INT < 29 &&
+                checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+            ) {
+                pendingExport = job
+                storagePerm.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            } else {
+                doExport(job)
+            }
+        } catch (t: Throwable) {
+            fail(t)
+        }
+    }
+
+    private fun doExport(job: ExportJob) {
+        Thread {
             try {
-                val w = editor.width
-                val h = editor.height
-                val sc = pendingScale
-                if (w.toLong() * sc * h * sc > Int.MAX_VALUE.toLong()) {
-                    toast("Skala terlalu besar")
-                } else {
-                    val px = ProjectIO.compositePixels(editor)
-                    bg("PNG tersimpan") {
-                        val out = contentResolver.openOutputStream(uri) ?: throw IOException("Tidak bisa menulis file")
-                        out.use { ProjectIO.writePng(px, w, h, sc, it) }
+                var en = exportName()
+                if (Build.VERSION.SDK_INT >= 29) {
+                    val cv = ContentValues().apply {
+                        put(MediaStore.Images.Media.DISPLAY_NAME, en.name)
+                        put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+                        put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/Pixilio")
+                        put(MediaStore.Images.Media.IS_PENDING, 1)
                     }
+                    val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, cv)
+                        ?: throw IOException("Tidak bisa membuat file")
+                    try {
+                        val out = contentResolver.openOutputStream(uri) ?: throw IOException("Tidak bisa menulis file")
+                        out.use { ProjectIO.writePng(job.px, job.w, job.h, job.sc, it) }
+                        val done = ContentValues().apply { put(MediaStore.Images.Media.IS_PENDING, 0) }
+                        contentResolver.update(uri, done, null, null)
+                    } catch (t: Throwable) {
+                        contentResolver.delete(uri, null, null)
+                        throw t
+                    }
+                } else {
+                    val dir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Pixilio")
+                    if (!dir.exists() && !dir.mkdirs()) throw IOException("Tidak bisa membuat folder Pictures/Pixilio")
+                    while (File(dir, en.name).exists()) en = exportName(en.n)
+                    val f = File(dir, en.name)
+                    FileOutputStream(f).use { ProjectIO.writePng(job.px, job.w, job.h, job.sc, it) }
+                    MediaScannerConnection.scanFile(this, arrayOf(f.path), arrayOf("image/png"), null)
                 }
+                commitExport(en)
+                toast("Tersimpan di Pictures/Pixilio/${en.name}")
             } catch (t: Throwable) {
                 fail(t)
             }
-        }
+        }.start()
     }
 
     private fun displayName(uri: Uri): String {
@@ -311,10 +385,7 @@ class MainActivity : ComponentActivity() {
         val actions = Actions(
             openProject = { openLauncher.launch(arrayOf("*/*")) },
             saveProject = { saveLauncher.launch("Proyek Pixilio.pixilio") },
-            exportPng = { sc ->
-                pendingScale = sc
-                pngLauncher.launch("pixilio.png")
-            },
+            exportPng = { sc -> startExport(sc) },
             importImage = { imageLauncher.launch(arrayOf("image/*")) },
             version = version
         )

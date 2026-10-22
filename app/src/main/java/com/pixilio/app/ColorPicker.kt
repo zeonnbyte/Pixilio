@@ -291,7 +291,10 @@ fun ColorDialog(e: Editor, onDismiss: () -> Unit) {
                         }
                     },
                     label = { Text("Kode warna") },
-                    supportingText = { Text("HEX, RGB, HSL, HSV, CMYK, 0xAARRGGBB", fontSize = 11.sp) },
+                    supportingText = {
+                        if (bad) Text("Kode warna tidak valid", color = MaterialTheme.colorScheme.error, fontSize = 11.sp)
+                        else Text("HEX, RGB, HSL, HSV, CMYK, 0xAARRGGBB", fontSize = 11.sp)
+                    },
                     isError = bad,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()

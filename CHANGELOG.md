@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.15.2026-alpha
+- Peringatan input dilengkapi: kode warna tidak valid, nama sudah dipakai (folder/ganti nama), karakter nama yang diganti spasi
+- Ekspor PNG: nomor urut hari itu hanya naik kalau ekspor berhasil; Android 9 ke bawah tidak menimpa file yang sudah ada
+
+## 0.0.14.2026-alpha
+- Ubah ukuran kanvas: toggle "Skala gambar" (default mati) untuk men-skala isi gambar, bukan memotong/menambah ruang
+- Pesan peringatan untuk input yang tidak sesuai (ukuran kosong/0/terlalu besar, memori, skala, nama kosong, rasio berubah, dll.)
+- Ekspor PNG langsung ke `Pictures/Pixilio/<dd.MM.yyyy HH.mm N>.png` (N = urutan gambar di hari itu); izin penyimpanan hanya diminta di Android 9 ke bawah
+
 ## 0.0.13.2026-alpha
 - Latar kotak-kotak: 1 kotak = 16 piksel kanvas (kanvas 16 polos, 32 = 2x2, 64 = 4x4, 128 = 8x8), berlaku juga di preview proyek
 - Pengaturan ukuran latar dihapus

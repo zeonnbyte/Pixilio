@@ -949,7 +949,7 @@ class Editor {
         }
     }
 
-    fun resizeCanvas(nw: Int, nh: Int): Boolean {
+    fun resizeCanvas(nw: Int, nh: Int, scale: Boolean = false): Boolean {
         if (nw < 1 || nh < 1 || nw.toLong() * nh > Int.MAX_VALUE.toLong()) {
             onMessage("Ukuran tidak valid")
             return false
@@ -962,9 +962,16 @@ class Editor {
             val olds = layers.map { it.pixels }
             val news = olds.map { old ->
                 val n = IntArray(nw * nh)
-                val cw = min(ow, nw)
-                val ch = min(oh, nh)
-                for (y in 0 until ch) System.arraycopy(old, y * ow, n, y * nw, cw)
+                if (scale) {
+                    for (y in 0 until nh) {
+                        val sy = (y.toLong() * oh / nh).toInt()
+                        for (x in 0 until nw) n[y * nw + x] = old[sy * ow + (x.toLong() * ow / nw).toInt()]
+                    }
+                } else {
+                    val cw = min(ow, nw)
+                    val ch = min(oh, nh)
+                    for (y in 0 until ch) System.arraycopy(old, y * ow, n, y * nw, cw)
+                }
                 n
             }
             setDoc(nw, nh, news)

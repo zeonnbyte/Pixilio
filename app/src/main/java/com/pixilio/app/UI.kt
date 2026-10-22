@@ -36,6 +36,7 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Switch
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -189,12 +190,13 @@ fun App(e: Editor, a: Actions, name: String, onHome: () -> Unit) {
         "new" -> SizeDialog(
             "Kanvas baru", 32, 32,
             "Proyek saat ini akan diganti. Simpan dulu kalau perlu.",
-            { w, h -> dlg = ""; e.newDoc(w, h) }, { dlg = "" }
+            { w, h, _ -> dlg = ""; e.newDoc(w, h) }, { dlg = "" }
         )
         "resize" -> SizeDialog(
             "Ubah ukuran kanvas", e.width, e.height,
             "Ukuran lebih kecil memotong gambar dari sisi kanan/bawah.",
-            { w, h -> dlg = ""; e.resizeCanvas(w, h) }, { dlg = "" }
+            { w, h, sc -> dlg = ""; e.resizeCanvas(w, h, sc) }, { dlg = "" },
+            showScale = true, layers = e.layers.size, current = e.width to e.height
         )
         "lang" -> LanguageDialog { dlg = "" }
         "color" -> ColorDialog(e) { dlg = "" }
@@ -469,17 +471,39 @@ fun SizeDialog(
     w0: Int,
     h0: Int,
     note: String,
-    onOk: (Int, Int) -> Unit,
-    onDismiss: () -> Unit
+    onOk: (Int, Int, Boolean) -> Unit,
+    onDismiss: () -> Unit,
+    showScale: Boolean = false,
+    layers: Int = 1,
+    current: Pair<Int, Int>? = null
 ) {
     var ws by remember { mutableStateOf(w0.toString()) }
     var hs by remember { mutableStateOf(h0.toString()) }
+    var scale by remember { mutableStateOf(false) }
+    val errW = Check.dim(ws)
+    val errH = Check.dim(hs)
+    val w = ws.toIntOrNull() ?: 0
+    val h = hs.toIntOrNull() ?: 0
+    val valid = errW == null && errH == null
+    val big = if (valid) Check.tooBig(w.toLong(), h.toLong()) else null
+    val ok = valid && big == null
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(note, fontSize = 12.sp)
+                if (showScale) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Switch(checked = scale, onCheckedChange = { scale = it })
+                        Spacer(Modifier.width(8.dp))
+                        Text("Skala gambar (resize image)", modifier = Modifier.weight(1f))
+                    }
+                    Text(
+                        if (scale) "Gambar diskalakan ke ukuran baru." else "Gambar tidak diskalakan: dipotong atau ditambah ruang kosong.",
+                        fontSize = 12.sp
+                    )
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     listOf(16, 32, 64, 128).forEach { s ->
                         AssistChip(onClick = { ws = s.toString(); hs = s.toString() }, label = { Text("$s") })
@@ -489,6 +513,8 @@ fun SizeDialog(
                     value = ws,
                     onValueChange = { ws = it.filter(Char::isDigit).take(7) },
                     label = { Text("Lebar (px)") },
+                    isError = errW != null,
+                    supportingText = if (errW != null) ({ Text(errW) }) else null,
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
@@ -496,18 +522,24 @@ fun SizeDialog(
                     value = hs,
                     onValueChange = { hs = it.filter(Char::isDigit).take(7) },
                     label = { Text("Tinggi (px)") },
+                    isError = errH != null,
+                    supportingText = if (errH != null) ({ Text(errH) }) else null,
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
+                if (big != null) Text(big, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                if (ok) {
+                    if (current != null && w == current.first && h == current.second) {
+                        Warn("Ukuran sama dengan sekarang, tidak ada perubahan")
+                    } else if (current != null) {
+                        if (!scale && (w < current.first || h < current.second)) Warn("Ukuran lebih kecil: sebagian gambar akan terpotong")
+                        if (scale && w.toLong() * current.second != h.toLong() * current.first) Warn("Rasio berubah, gambar akan terlihat melar")
+                    }
+                    Check.memory(w.toLong(), h.toLong(), layers)?.let { Warn(it) }
+                }
             }
         },
-        confirmButton = {
-            TextButton(onClick = {
-                val w = ws.toIntOrNull()
-                val h = hs.toIntOrNull()
-                if (w != null && h != null && w > 0 && h > 0) onOk(w, h)
-            }) { Text("OK") }
-        },
+        confirmButton = { TextButton(enabled = ok, onClick = { onOk(w, h, scale) }) { Text("OK") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Batal") } }
     )
 }
@@ -611,6 +643,11 @@ fun ClipsDialog(e: Editor, onDismiss: () -> Unit) {
 fun ExportDialog(e: Editor, onOk: (Int) -> Unit, onDismiss: () -> Unit) {
     var s by remember { mutableStateOf("1") }
     val sc = s.toIntOrNull() ?: 1
+    val errS = Check.dim(s, "Minimal 1x")
+    val ow = e.width.toLong() * sc
+    val oh = e.height.toLong() * sc
+    val big = if (errS == null) Check.tooBig(ow, oh) else null
+    val err = errS ?: big
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Ekspor PNG") },
@@ -628,13 +665,17 @@ fun ExportDialog(e: Editor, onOk: (Int) -> Unit, onDismiss: () -> Unit) {
                     value = s,
                     onValueChange = { s = it.filter(Char::isDigit).take(3) },
                     label = { Text("Skala (x)") },
+                    isError = err != null,
+                    supportingText = if (err != null) ({ Text(err) }) else null,
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
                 Text("Hasil: ${e.width.toLong() * sc} × ${e.height.toLong() * sc} px", fontSize = 13.sp)
+                if (err == null) Check.memory(ow, oh, 0)?.let { Warn(it) }
+                Text("Disimpan ke Pictures/Pixilio", fontSize = 12.sp)
             }
         },
-        confirmButton = { TextButton(onClick = { if (sc >= 1) onOk(sc) }) { Text("Ekspor") } },
+        confirmButton = { TextButton(enabled = err == null, onClick = { onOk(sc) }) { Text("Ekspor") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Batal") } }
     )
 }

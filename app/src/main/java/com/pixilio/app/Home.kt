@@ -26,6 +26,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
@@ -156,11 +157,11 @@ fun HomeScreen(
     when (dlg) {
         "lang" -> LanguageDialog { dlg = "" }
         "project" -> ProjectDialog({ n, w, h -> dlg = ""; onCreate(n, w, h) }, { dlg = "" })
-        "folder" -> NameDialog("Folder baru", "", "Nama folder", { n ->
+        "folder" -> NameDialog("Folder baru", "", "Nama folder", { n -> entries.any { it.isDir && it.name == n } }, { n ->
             dlg = ""
             if (onFolder(n)) tick++
         }, { dlg = "" })
-        "rename" -> if (t != null) NameDialog("Ganti nama", t.name, "Nama", { n ->
+        "rename" -> if (t != null) NameDialog("Ganti nama", t.name, "Nama", { n -> entries.any { it !== t && it.isDir == t.isDir && it.name == n } }, { n ->
             dlg = ""
             if (onRename(t, n)) tick++
         }, { dlg = "" })
@@ -221,17 +222,33 @@ private fun NameDialog(
     title: String,
     initial: String,
     label: String,
+    taken: (String) -> Boolean = { false },
     onOk: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
     var s by remember { mutableStateOf(initial) }
+    val err = when {
+        ProjectStore.clean(s).isEmpty() -> "Nama tidak boleh kosong"
+        taken(ProjectStore.clean(s)) -> "Nama sudah dipakai"
+        else -> null
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
-            OutlinedTextField(value = s, onValueChange = { s = it.take(60) }, label = { Text(label) }, singleLine = true)
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                OutlinedTextField(
+                    value = s,
+                    onValueChange = { s = it.take(60) },
+                    label = { Text(label) },
+                    isError = err != null,
+                    supportingText = if (err != null) ({ Text(err) }) else null,
+                    singleLine = true
+                )
+                Check.nameChars(s)?.let { Warn(it) }
+            }
         },
-        confirmButton = { TextButton(onClick = { if (s.isNotBlank()) onOk(s) }) { Text("OK") } },
+        confirmButton = { TextButton(enabled = err == null, onClick = { onOk(s) }) { Text("OK") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Batal") } }
     )
 }
@@ -241,6 +258,14 @@ private fun ProjectDialog(onOk: (String, Int, Int) -> Unit, onDismiss: () -> Uni
     var name by remember { mutableStateOf(tr("Proyek baru")) }
     var ws by remember { mutableStateOf("32") }
     var hs by remember { mutableStateOf("32") }
+    val errN = if (name.isBlank()) "Nama tidak boleh kosong" else null
+    val errW = Check.dim(ws)
+    val errH = Check.dim(hs)
+    val w = ws.toIntOrNull() ?: 0
+    val h = hs.toIntOrNull() ?: 0
+    val valid = errW == null && errH == null
+    val big = if (valid) Check.tooBig(w.toLong(), h.toLong()) else null
+    val ok = errN == null && valid && big == null
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Proyek baru") },
@@ -250,8 +275,11 @@ private fun ProjectDialog(onOk: (String, Int, Int) -> Unit, onDismiss: () -> Uni
                     value = name,
                     onValueChange = { name = it.take(60) },
                     label = { Text("Nama proyek") },
+                    isError = errN != null,
+                    supportingText = if (errN != null) ({ Text(errN) }) else null,
                     singleLine = true
                 )
+                Check.nameChars(name)?.let { Warn(it) }
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     listOf(16, 32, 64, 128).forEach { v ->
                         AssistChip(onClick = { ws = v.toString(); hs = v.toString() }, label = { Text("$v") })
@@ -261,6 +289,8 @@ private fun ProjectDialog(onOk: (String, Int, Int) -> Unit, onDismiss: () -> Uni
                     value = ws,
                     onValueChange = { ws = it.filter(Char::isDigit).take(7) },
                     label = { Text("Lebar (px)") },
+                    isError = errW != null,
+                    supportingText = if (errW != null) ({ Text(errW) }) else null,
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
@@ -268,18 +298,16 @@ private fun ProjectDialog(onOk: (String, Int, Int) -> Unit, onDismiss: () -> Uni
                     value = hs,
                     onValueChange = { hs = it.filter(Char::isDigit).take(7) },
                     label = { Text("Tinggi (px)") },
+                    isError = errH != null,
+                    supportingText = if (errH != null) ({ Text(errH) }) else null,
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
+                if (big != null) Text(big, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                if (ok) Check.memory(w.toLong(), h.toLong(), 1)?.let { Warn(it) }
             }
         },
-        confirmButton = {
-            TextButton(onClick = {
-                val w = ws.toIntOrNull()
-                val h = hs.toIntOrNull()
-                if (w != null && h != null && w > 0 && h > 0) onOk(name, w, h)
-            }) { Text("Buat") }
-        },
+        confirmButton = { TextButton(enabled = ok, onClick = { onOk(name, w, h) }) { Text("Buat") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Batal") } }
     )
 }
