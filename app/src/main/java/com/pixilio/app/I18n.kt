@@ -79,6 +79,7 @@ private val EN: Map<String, String> = mapOf(
     "Pas layar" to "Fit to screen",
     "Tentang" to "About",
     "Bahasa" to "Language",
+    "Latar kotak-kotak" to "Checkerboard background",
     "Default (ikut sistem)" to "Default (system)",
     "Kanvas baru" to "New canvas",
     "Proyek saat ini akan diganti. Simpan dulu kalau perlu." to

@@ -183,7 +183,7 @@ class Editor {
 
     fun loadDoc(w: Int, h: Int, ls: List<Layer>, act: Int) {
         val nb = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        val nc = IntArray(w * h)
+        val nc = IntArray(0)
         history.clear()
         hp = 0
         sync()
@@ -222,14 +222,13 @@ class Editor {
         val x1 = min(bx, width - 1)
         val y1 = min(by, height - 1)
         if (x1 < x0 || y1 < y0) return
-        val w = width
+        val n = x1 - x0 + 1
+        if (comp.size < n) comp = IntArray(n)
         for (y in y0..y1) {
-            var i = y * w + x0
-            for (x in x0..x1) {
-                comp[i++] = pixelAt(x, y, true)
-            }
+            var k = 0
+            for (x in x0..x1) comp[k++] = pixelAt(x, y, false)
+            bmp.setPixels(comp, 0, n, x0, y, n, 1)
         }
-        bmp.setPixels(comp, y0 * w + x0, w, x0, y0, x1 - x0 + 1, y1 - y0 + 1)
     }
 
     private fun fullRefresh() {
@@ -917,7 +916,7 @@ class Editor {
 
     private fun setDoc(w: Int, h: Int, arrs: List<IntArray>) {
         val nb = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        val nc = IntArray(w * h)
+        val nc = IntArray(0)
         for (i in layers.indices) layers[i].pixels = arrs[i]
         width = w
         height = h

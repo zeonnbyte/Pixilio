@@ -4,7 +4,7 @@
 
 **Editor pixel art untuk Android**
 
-![Versi](https://img.shields.io/badge/versi-0.0.9--alpha-orange)
+![Versi](https://img.shields.io/badge/versi-0.0.10--alpha-orange)
 ![Platform](https://img.shields.io/badge/platform-Android%207.0%2B-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-Jetpack%20Compose-7F52FF?logo=kotlin&logoColor=white)
 
@@ -14,7 +14,7 @@ Pixilio adalah editor pixel art ringan buat Android, dibuat dengan Kotlin dan Je
 
 ## Fitur
 
-- **Beranda:** daftar proyek, folder, tombol **+** proyek baru, ganti nama, hapus, autosave
+- **Beranda:** daftar proyek dengan preview gambar, folder, tombol **+** proyek baru, ganti nama, hapus, autosave
 - **Alat:** pensil, penghapus, isi (fill), pipet, garis, kotak, elips, pilih area, geser
 - **Kuas:** ukuran 1-64, simetri X/Y, isi bentuk
 - **Warna:** palet 32 warna, color picker mode **Wheel** dan **Biasa**, kode HEX / RGB / HSL / HSV / CMYK / 0xARGB, palet tersimpan
@@ -22,6 +22,7 @@ Pixilio adalah editor pixel art ringan buat Android, dibuat dengan Kotlin dan Je
 - **Clipboard:** salin, potong, tempel, riwayat clipboard
 - **Kanvas:** undo/redo, pinch zoom, grid, ubah ukuran, putar 90°, balik horizontal/vertikal
 - **File:** proyek `.pixilio`, ekspor PNG berskala, impor gambar
+- **Latar:** kotak-kotak statis (tidak ikut zoom), ukuran 16 / 32 / 64 / 128 / 256 px
 - **Bahasa:** Default (ikut sistem), Indonesia, English
 - **Ikon:** gaya [Lucide](https://lucide.dev)
 

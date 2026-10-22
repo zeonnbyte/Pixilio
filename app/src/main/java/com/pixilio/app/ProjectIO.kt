@@ -4,6 +4,9 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.IOException
@@ -12,6 +15,7 @@ import java.io.OutputStream
 import java.nio.ByteBuffer
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
+import kotlin.math.roundToInt
 
 class DocSnapshot(
     val w: Int,
@@ -30,12 +34,12 @@ object ProjectIO {
     private const val FORMAT = 1
     private const val CHUNK = 65536
 
-    fun snapshot(e: Editor): DocSnapshot = DocSnapshot(
+    fun snapshot(e: Editor, copy: Boolean = true): DocSnapshot = DocSnapshot(
         e.width, e.height,
         e.layers.map { it.name },
         e.layers.map { it.visible },
         e.layers.map { it.opacity },
-        e.layers.map { it.pixels.copyOf() },
+        e.layers.map { if (copy) it.pixels.copyOf() else it.pixels },
         e.active
     )
 
@@ -93,6 +97,57 @@ object ProjectIO {
             }
         }
         e.loadDoc(s.w, s.h, ls, s.act)
+    }
+
+    /** Thumbnail kecil (maks 256 px) dari snapshot, di-sampling nearest tanpa komposit penuh. */
+    fun makeThumb(s: DocSnapshot): Bitmap {
+        val m = maxOf(s.w, s.h)
+        val tw: Int
+        val th: Int
+        if (m <= 256) {
+            tw = s.w
+            th = s.h
+        } else {
+            val f = 256f / m
+            tw = (s.w * f).roundToInt().coerceAtLeast(1)
+            th = (s.h * f).roundToInt().coerceAtLeast(1)
+        }
+        val out = IntArray(tw * th)
+        for (ty in 0 until th) {
+            val sy = (ty.toLong() * s.h / th).toInt()
+            for (tx in 0 until tw) {
+                val sx = (tx.toLong() * s.w / tw).toInt()
+                val i = sy * s.w + sx
+                var c = 0
+                for (k in s.pix.indices) {
+                    if (!s.vis[k]) continue
+                    c = blendOver(c, s.pix[k][i], s.op[k])
+                }
+                out[ty * tw + tx] = c
+            }
+        }
+        val bmp = Bitmap.createBitmap(tw, th, Bitmap.Config.ARGB_8888)
+        bmp.setPremultiplied(false)
+        bmp.setPixels(out, 0, tw, 0, 0, tw, th)
+        return bmp
+    }
+
+    fun writeThumb(s: DocSnapshot, t: File) {
+        val bmp = makeThumb(s)
+        FileOutputStream(t).use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }
+
+    /** Muat thumbnail proyek; kalau belum ada, dibuat dari file proyek. */
+    fun loadThumb(f: File): Bitmap? {
+        val t = ProjectStore.thumb(f)
+        return try {
+            if (t.exists()) BitmapFactory.decodeFile(t.path)?.let { return it }
+            val s = FileInputStream(f).use { read(it) }
+            writeThumb(s, t)
+            BitmapFactory.decodeFile(t.path)
+        } catch (x: Throwable) {
+            null
+        }
     }
 
     fun decodeImage(input: InputStream): ImageData? {

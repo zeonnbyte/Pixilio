@@ -27,9 +27,9 @@ class MainActivity : ComponentActivity() {
     private var current by mutableStateOf<File?>(null)
     private var refresh by mutableIntStateOf(0)
 
-    private fun saveTo(f: File, quiet: Boolean = false, done: (() -> Unit)? = null) {
+    private fun saveTo(f: File, quiet: Boolean = false, copy: Boolean = true, done: (() -> Unit)? = null) {
         val snap = try {
-            ProjectIO.snapshot(editor)
+            ProjectIO.snapshot(editor, copy)
         } catch (t: Throwable) {
             if (!quiet) fail(t)
             return
@@ -42,6 +42,10 @@ class MainActivity : ComponentActivity() {
                     f.delete()
                     tmp.renameTo(f)
                 }
+                try {
+                    ProjectIO.writeThumb(snap, ProjectStore.thumb(f))
+                } catch (_: Throwable) {
+                }
             } catch (t: Throwable) {
                 if (!quiet) fail(t)
             }
@@ -52,7 +56,7 @@ class MainActivity : ComponentActivity() {
     private fun goHome() {
         val f = current ?: return
         editor.commitFloat()
-        saveTo(f) {
+        saveTo(f, copy = false) {
             current = null
             refresh++
         }
@@ -76,7 +80,7 @@ class MainActivity : ComponentActivity() {
         if (!editor.newDoc(w, h)) return
         val f = ProjectStore.projectFile(dir, name)
         current = f
-        saveTo(f)
+        saveTo(f, copy = false)
     }
 
     private fun makeFolder(name: String): Boolean {
@@ -205,6 +209,8 @@ class MainActivity : ComponentActivity() {
         editor.onPaletteChange = {
             prefs.edit().putString("palette", editor.palette.joinToString(",")).apply()
         }
+        Bg.load(prefs.getInt("bg", 32))
+        Bg.onChange = { prefs.edit().putInt("bg", Bg.size).apply() }
         editor.onMessage = { toast(it) }
         editor.newDoc(32, 32)
 
@@ -258,6 +264,6 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         val f = current ?: return
-        saveTo(f, quiet = true)
+        saveTo(f, quiet = true, copy = false)
     }
 }

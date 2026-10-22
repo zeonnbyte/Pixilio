@@ -9,6 +9,8 @@ class Entry(val file: File, val isDir: Boolean) {
 object ProjectStore {
     const val EXT = ".pixilio"
 
+    fun thumb(f: File): File = File(f.parentFile, f.name + ".png")
+
     fun root(filesDir: File): File = File(filesDir, "projects").also { it.mkdirs() }
 
     fun clean(s: String): String =
@@ -48,10 +50,16 @@ object ProjectStore {
         if (n.isEmpty()) return false
         val t = File(e.file.parentFile, if (e.isDir) n else n + EXT)
         if (t.exists()) return false
-        return e.file.renameTo(t)
+        val ok = e.file.renameTo(t)
+        if (ok && !e.isDir) {
+            val old = thumb(e.file)
+            if (old.exists()) old.renameTo(thumb(t))
+        }
+        return ok
     }
 
     fun delete(e: Entry) {
         e.file.deleteRecursively()
+        if (!e.isDir) thumb(e.file).delete()
     }
 }

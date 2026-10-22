@@ -46,6 +46,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.io.File
+import androidx.compose.foundation.Canvas
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlin.math.roundToInt
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -102,6 +113,7 @@ fun HomeScreen(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
+                IconButton(onClick = { dlg = "bg" }) { Icon(Lu.Grid3x3, null, tint = Color.White) }
                 IconButton(onClick = { dlg = "lang" }) { Icon(Lu.Languages, null, tint = Color.White) }
             }
             if (entries.isEmpty()) {
@@ -144,6 +156,7 @@ fun HomeScreen(
     val t = target
     when (dlg) {
         "lang" -> LanguageDialog { dlg = "" }
+        "bg" -> BgDialog { dlg = "" }
         "project" -> ProjectDialog({ n, w, h -> dlg = ""; onCreate(n, w, h) }, { dlg = "" })
         "folder" -> NameDialog("Folder baru", "", "Nama folder", { n ->
             dlg = ""
@@ -188,7 +201,7 @@ private fun EntryRow(e: Entry, onClick: () -> Unit, onRename: () -> Unit, onDele
                 .padding(start = 14.dp, top = 6.dp, bottom = 6.dp, end = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(if (e.isDir) Lu.Folder else Lu.Palette, null, tint = Color.White, modifier = Modifier.size(28.dp))
+            if (e.isDir) Icon(Lu.Folder, null, tint = Color.White, modifier = Modifier.size(28.dp)) else Thumb(e.file)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(e.name, color = Color.White, fontSize = 17.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -271,4 +284,36 @@ private fun ProjectDialog(onOk: (String, Int, Int) -> Unit, onDismiss: () -> Uni
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Batal") } }
     )
+}
+
+@Composable
+private fun Thumb(f: File) {
+    val img by produceState<ImageBitmap?>(null, f.path, f.lastModified()) {
+        value = withContext(Dispatchers.IO) { ProjectIO.loadThumb(f)?.asImageBitmap() }
+    }
+    Box(Modifier.size(56.dp).clip(RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+        val b = img
+        if (b == null) {
+            Icon(Lu.Palette, null, tint = Color.White, modifier = Modifier.size(28.dp))
+        } else {
+            Canvas(Modifier.fillMaxSize()) {
+                val iw = b.width
+                val ih = b.height
+                val sc = minOf(size.width / iw, size.height / ih)
+                val dw = iw * sc
+                val dh = ih * sc
+                val l = (size.width - dw) / 2f
+                val t = (size.height - dh) / 2f
+                drawChecker(l, t, dw, dh, size.minDimension / 6f)
+                drawImage(
+                    image = b,
+                    srcOffset = IntOffset.Zero,
+                    srcSize = IntSize(iw, ih),
+                    dstOffset = IntOffset(l.roundToInt(), t.roundToInt()),
+                    dstSize = IntSize(dw.roundToInt().coerceAtLeast(1), dh.roundToInt().coerceAtLeast(1)),
+                    filterQuality = FilterQuality.None
+                )
+            }
+        }
+    }
 }
