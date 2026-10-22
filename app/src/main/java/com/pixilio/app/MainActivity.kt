@@ -1,6 +1,11 @@
 package com.pixilio.app
 
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.OpenableColumns
+import java.io.BufferedInputStream
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -192,6 +197,86 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun displayName(uri: Uri): String {
+        var n: String? = null
+        try {
+            contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use {
+                if (it.moveToFirst()) n = it.getString(0)
+            }
+        } catch (_: Throwable) {
+        }
+        val raw = n ?: uri.lastPathSegment ?: ""
+        val base = raw.substringAfterLast('/').substringBeforeLast('.')
+        return base.ifBlank { "Gambar" }
+    }
+
+    /** Buka gambar / file .pixilio dari app lain (Buka dengan / Bagikan). */
+    private fun handleIntent(i: Intent?) {
+        if (i == null) return
+        val act = i.action
+        if (act != Intent.ACTION_VIEW && act != Intent.ACTION_SEND) return
+        val uri: Uri? = if (act == Intent.ACTION_SEND) {
+            if (Build.VERSION.SDK_INT >= 33) i.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+            else @Suppress("DEPRECATION") i.getParcelableExtra(Intent.EXTRA_STREAM)
+        } else i.data
+        i.action = null
+        i.data = null
+        if (uri == null) return
+        val base = displayName(uri)
+        Thread {
+            try {
+                val raw = contentResolver.openInputStream(uri) ?: throw IOException("Tidak bisa membaca file")
+                val bin = BufferedInputStream(raw, 1 shl 16)
+                bin.use {
+                    it.mark(4)
+                    val b0 = it.read()
+                    val b1 = it.read()
+                    it.reset()
+                    if (b0 == 0x1f && b1 == 0x8b) {
+                        val snap = ProjectIO.read(it)
+                        runOnUiThread {
+                            try {
+                                val c = current
+                                if (c != null) {
+                                    editor.commitFloat()
+                                    saveTo(c, quiet = true)
+                                }
+                                val f = ProjectStore.projectFile(rootDir, base)
+                                ProjectIO.apply(editor, snap)
+                                dir = rootDir
+                                current = f
+                                saveTo(f, copy = false)
+                            } catch (t: Throwable) {
+                                fail(t)
+                            }
+                        }
+                    } else {
+                        val img = ProjectIO.decodeImage(it) ?: throw IOException("Bukan gambar yang valid")
+                        runOnUiThread {
+                            try {
+                                val c = current
+                                if (c != null) {
+                                    editor.commitFloat()
+                                    saveTo(c, quiet = true)
+                                }
+                                if (editor.newDoc(img.w, img.h, img.px, "Gambar")) {
+                                    val f = ProjectStore.projectFile(rootDir, base)
+                                    dir = rootDir
+                                    current = f
+                                    saveTo(f, copy = false)
+                                }
+                            } catch (t: Throwable) {
+                                fail(t)
+                            }
+                        }
+                    }
+                }
+            } catch (t: Throwable) {
+                fail(t)
+            }
+        }.start()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -259,6 +344,13 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+        handleIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
     }
 
     override fun onStop() {

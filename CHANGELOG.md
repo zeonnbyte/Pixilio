@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.11.2026-alpha
+- Pixilio muncul di "Buka dengan" dan Bagikan: gambar (PNG/JPG/WebP) diimpor jadi proyek baru, file `.pixilio` langsung dibuka
+- Support semua file manager (ZArchiver, Explorer, bawaan, dll.)
+
 ## 0.0.10.2026-alpha
 - Latar kotak-kotak statis (tidak ikut zoom/ukuran piksel), ukuran bisa dipilih 16/32/64/128/256 px (Beranda dan menu ⋮ editor)
 - Beranda: preview gambar tiap proyek
