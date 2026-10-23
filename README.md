@@ -4,7 +4,7 @@
 
 **Editor pixel art ringan untuk Android**
 
-![Versi](https://img.shields.io/badge/versi-0.0.20--alpha-orange)
+![Versi](https://img.shields.io/badge/versi-0.0.22--alpha-orange)
 ![Platform](https://img.shields.io/badge/Android-7.0%2B-3DDC84?logo=android&logoColor=white)
 
 </div>
@@ -35,7 +35,7 @@ Butuh Android 7.0 atau lebih baru.
 - **Buka dengan / Bagikan:** Pixilio muncul untuk gambar dan file `.pixilio` dari file manager atau galeri
 - **Peringatan:** pesan jelas kalau input tidak sesuai (ukuran, skala, nama, kode warna, memori)
 - **Bahasa:** ikut sistem, Indonesia, atau English
-- **Pengaturan:** bahasa, lisensi pustaka open source, dan info aplikasi
+- **Pengaturan:** bahasa, lisensi Pixilio (MIT) dan pustaka open source, serta info aplikasi
 
 ## Tips
 

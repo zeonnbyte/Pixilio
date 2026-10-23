@@ -133,6 +133,7 @@ class Editor {
     private var comp = IntArray(0)
     var onMessage: (String) -> Unit = {}
     var onPaletteChange: () -> Unit = {}
+    var onClipsChange: () -> Unit = {}
     private var needFit = true
 
     private val history = ArrayList<Action>()
@@ -683,11 +684,22 @@ class Editor {
             }
             val tag = if (merged) " (gabungan)" else ""
             clips.add(0, Clip(w, h, buf, "$w×$h$tag"))
+            onClipsChange()
             if (cut) clearRect(s)
             onMessage(if (cut) "Dipotong ke clipboard" else "Disalin ke clipboard")
         } catch (oom: OutOfMemoryError) {
             onMessage("Memori tidak cukup")
         }
+    }
+
+    fun removeClip(c: Clip) {
+        clips.remove(c)
+        onClipsChange()
+    }
+
+    fun clearClips() {
+        clips.clear()
+        onClipsChange()
     }
 
     private fun clearRect(s: IntArray) {

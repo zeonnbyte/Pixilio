@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.22.2026-alpha
+- Pengaturan > Lisensi: tambah lisensi aplikasi Pixilio sendiri (MIT) di atas daftar lisensi pustaka; berkas LICENSE ditambahkan ke repo
+
+## 0.0.21.2026-alpha
+- Fix: riwayat clipboard sekarang disimpan ke penyimpanan aplikasi, jadi tidak hilang lagi saat aplikasi di-update, ditutup, atau dimatikan sistem
+
 ## 0.0.20.2026-alpha
 - Beranda: tampilan proyek bisa grid atau memanjang (list), pilihan diingat
 - Beranda: pencarian proyek/folder, tidak peduli huruf besar atau kecil

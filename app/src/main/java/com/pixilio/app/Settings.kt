@@ -33,6 +33,24 @@ import androidx.compose.ui.unit.sp
 
 private class LicenseItem(val name: String, val kind: String, val text: String)
 
+private val APP_LICENSE = LicenseItem(
+    "Pixilio",
+    "MIT License",
+    "Copyright (c) 2026 Zeonn\n\n" +
+        "Permission is hereby granted, free of charge, to any person obtaining a copy of this software and " +
+        "associated documentation files (the \"Software\"), to deal in the Software without restriction, " +
+        "including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, " +
+        "and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, " +
+        "subject to the following conditions:\n\n" +
+        "The above copyright notice and this permission notice shall be included in all copies or substantial " +
+        "portions of the Software.\n\n" +
+        "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT " +
+        "LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO " +
+        "EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER " +
+        "IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR " +
+        "THE USE OR OTHER DEALINGS IN THE SOFTWARE."
+)
+
 private val LICENSES = listOf(
     LicenseItem(
         "Lucide Icons",
@@ -107,16 +125,10 @@ fun SettingsScreen(version: String, onBack: () -> Unit) {
                     .padding(horizontal = 12.dp, vertical = 4.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                Text("Lisensi aplikasi:", color = Color(0x99FFFFFF), fontSize = 13.sp)
+                LicenseCard(APP_LICENSE)
                 Text("Pixilio memakai pustaka open source berikut:", color = Color(0x99FFFFFF), fontSize = 13.sp)
-                LICENSES.forEach { l ->
-                    Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFF2A2A2A), modifier = Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(l.name, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                            Text(l.kind, color = Color(0xFFFFB74D), fontSize = 12.sp)
-                            Text(l.text, color = Color(0xCCFFFFFF), fontSize = 12.sp)
-                        }
-                    }
-                }
+                LICENSES.forEach { l -> LicenseCard(l) }
                 Text("Pixilio $version", color = Color(0x66FFFFFF), fontSize = 12.sp, modifier = Modifier.padding(vertical = 12.dp))
             }
         } else {
@@ -133,7 +145,7 @@ fun SettingsScreen(version: String, onBack: () -> Unit) {
                     else -> "Default (ikut sistem)"
                 }
                 SettingRow("Bahasa", langLabel) { dlg = "lang" }
-                SettingRow("Lisensi", "Lisensi pustaka open source") { page = "license" }
+                SettingRow("Lisensi", "Lisensi Pixilio dan pustaka open source") { page = "license" }
                 SettingRow("Tentang", "Versi $version") { dlg = "about" }
             }
         }
@@ -156,6 +168,17 @@ fun SettingsScreen(version: String, onBack: () -> Unit) {
             },
             confirmButton = { TextButton(onClick = { dlg = "" }) { Text("OK") } }
         )
+    }
+}
+
+@Composable
+private fun LicenseCard(l: LicenseItem) {
+    Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFF2A2A2A), modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(l.name, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text(l.kind, color = Color(0xFFFFB74D), fontSize = 12.sp)
+            Text(l.text, color = Color(0xCCFFFFFF), fontSize = 12.sp)
+        }
     }
 }
 

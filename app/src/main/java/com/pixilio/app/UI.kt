@@ -626,12 +626,12 @@ fun ClipsDialog(e: Editor, onDismiss: () -> Unit) {
                                 .weight(1f)
                                 .padding(horizontal = 8.dp), fontSize = 13.sp)
                             TextButton(onClick = { e.paste(c); onDismiss() }) { Text("Tempel") }
-                            IconButton(onClick = { e.clips.remove(c) }) { Icon(Lu.X, null, Modifier.size(18.dp)) }
+                            IconButton(onClick = { e.removeClip(c) }) { Icon(Lu.X, null, Modifier.size(18.dp)) }
                         }
                     }
                 }
                 Row(Modifier.align(Alignment.End)) {
-                    if (e.clips.isNotEmpty()) TextButton(onClick = { e.clips.clear() }) { Text("Kosongkan") }
+                    if (e.clips.isNotEmpty()) TextButton(onClick = { e.clearClips() }) { Text("Kosongkan") }
                     TextButton(onClick = onDismiss) { Text("Tutup") }
                 }
             }

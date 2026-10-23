@@ -82,6 +82,8 @@ private val EN: Map<String, String> = mapOf(
     "Pengaturan" to "Settings",
     "Lisensi" to "License",
     "Lisensi pustaka open source" to "Open source library licenses",
+    "Lisensi Pixilio dan pustaka open source" to "Pixilio and open source library licenses",
+    "Lisensi aplikasi:" to "App license:",
     "Pixilio memakai pustaka open source berikut:" to "Pixilio uses the following open source libraries:",
     "Proyek diekspor" to "Project exported",
     "Bahasa" to "Language",

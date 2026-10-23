@@ -421,6 +421,14 @@ class MainActivity : ComponentActivity() {
             prefs.edit().putString("palette", editor.palette.joinToString(",")).apply()
         }
         editor.onMessage = { toast(it) }
+
+        // clipboard dipulihkan dari berkas, dan disimpan lagi tiap berubah
+        val clipFile = ClipStore.file(filesDir)
+        editor.clips.addAll(ClipStore.load(clipFile))
+        editor.onClipsChange = {
+            val snap = editor.clips.toList()
+            Thread { ClipStore.save(clipFile, snap) }.start()
+        }
         editor.newDoc(32, 32)
 
         dir = rootDir
@@ -488,6 +496,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
+        val clipSnap = editor.clips.toList()
+        val clipFile = ClipStore.file(filesDir)
+        Thread { ClipStore.save(clipFile, clipSnap) }.start()
         val f = current ?: return
         saveTo(f, quiet = true, copy = false)
     }
